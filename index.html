@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#4f46e5">
+<title>Timesheet</title>
+<style>
+:root{--bg:#f5f6fa;--card:#fff;--text:#1c2230;--muted:#6b7385;--line:#e5e7ef;--accent:#4f46e5;--accent-soft:#eef0ff;--ok:#15803d;--ok-soft:#dcfce7;--warn:#b45309;--warn-soft:#fef3c7;--bad:#b91c1c;--bad-soft:#fee2e2;--hol:#0e7490;--hol-soft:#cffafe;--leave:#7c3aed;--leave-soft:#ede9fe;--r:12px;--sh:0 1px 3px rgba(16,24,40,.07)}
+[data-theme=dark]{--bg:#0e1120;--card:#161a2c;--text:#e7e9f3;--muted:#8f96ad;--line:#262b45;--accent:#8b93ff;--accent-soft:#232853;--ok:#4ade80;--ok-soft:#14321f;--warn:#fbbf24;--warn-soft:#3a2c0b;--bad:#f87171;--bad-soft:#3b1515;--hol:#22d3ee;--hol-soft:#0c3440;--leave:#c4b5fd;--leave-soft:#2a2150;--sh:none}
+*{box-sizing:border-box}html,body{margin:0}
+body{font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
+h2,h3{margin:0 0 12px;font-size:15px;font-weight:650}
+header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:10px;padding:10px 20px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
+.logo{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff}
+nav{display:flex;gap:2px;background:var(--bg);padding:3px;border-radius:10px}
+nav button{border:0;background:none;color:var(--muted);padding:6px 14px;border-radius:8px;font:inherit;cursor:pointer}
+nav button.active{background:var(--card);color:var(--text);box-shadow:var(--sh);font-weight:600}
+.spacer{flex:1}
+main{max-width:1300px;margin:0 auto;padding:18px}
+.tab{display:none}.tab.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:14px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);color:var(--text);padding:7px 12px;border-radius:8px;font:inherit;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.ghost{background:transparent}.btn.sm{padding:3px 9px;font-size:12px}.btn.danger{color:var(--bad)}
+input,select,textarea{width:100%;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+textarea{resize:vertical}
+.form label{display:block;font-size:12px;color:var(--muted);margin-bottom:10px}
+.form label>input,.form label>select,.form label>textarea{margin-top:4px}
+.form label.check{display:flex;gap:8px;align-items:center;color:var(--text);font-size:14px}
+.form label.check input{width:auto;margin:0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+kbd{font-size:10px;opacity:.75;border:1px solid rgba(255,255,255,.45);border-radius:4px;padding:0 4px}
+.muted{color:var(--muted)}
+.log-grid{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+.log-grid>form{position:sticky;top:70px}
+.toolbar{display:flex;align-items:center;gap:8px;padding:10px 12px;flex-wrap:wrap}
+.toolbar b{min-width:130px;text-align:center}
+.toolbar input[type=search]{max-width:260px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;box-shadow:var(--sh)}
+.kpi span{display:block;font-size:12px;color:var(--muted)}
+.kpi b{font-size:22px;font-weight:700}.kpis.small .kpi b{font-size:17px}
+.day{padding:12px 14px;border-left:4px solid var(--accent)}
+.day.weekend{border-left-color:var(--muted)}.day.holiday{border-left-color:var(--hol)}.day.leave{border-left-color:var(--leave)}
+.day-h{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+.badge{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);margin-left:6px}
+.badge.weekend{background:var(--bg);color:var(--muted)}.badge.holiday{background:var(--hol-soft);color:var(--hol)}.badge.leave{background:var(--leave-soft);color:var(--leave)}
+.tot{font-weight:700;padding:2px 10px;border-radius:99px;background:var(--bg)}
+.tot.ok{background:var(--ok-soft);color:var(--ok)}.tot.warn{background:var(--warn-soft);color:var(--warn)}.tot.bad{background:var(--bad-soft);color:var(--bad)}
+.entry{display:grid;grid-template-columns:150px 1fr auto auto;gap:12px;align-items:start;padding:8px 0;border-top:1px dashed var(--line)}
+.chip{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:6px;background:hsl(var(--h) 85% 93%);color:hsl(var(--h) 60% 30%);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+[data-theme=dark] .chip{background:hsl(var(--h) 35% 22%);color:hsl(var(--h) 85% 80%)}
+.e-task{font-weight:600}
+.ticket{font-size:11px;font-family:ui-monospace,monospace;background:var(--bg);border:1px solid var(--line);padding:0 6px;border-radius:4px;margin-left:4px;font-weight:500}
+.e-desc{color:var(--muted);font-size:13px;white-space:pre-wrap}
+.e-h{font-variant-numeric:tabular-nums}
+.e-act{display:flex;gap:2px;opacity:.35;transition:.15s}.entry:hover .e-act{opacity:1}
+.e-act button{border:0;background:none;cursor:pointer;padding:2px 5px;border-radius:6px;color:var(--text);font-size:13px}
+.e-act button:hover{background:var(--bg)}
+.none{font-size:13px;padding:4px 0}
+.day-sum{font-size:12px;color:var(--muted);margin:-2px 0 10px}
+.pill{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--bg);color:var(--muted)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.dirty{background:var(--warn-soft);color:var(--warn)}.pill.err{background:var(--bad-soft);color:var(--bad)}.pill.busy{background:var(--accent-soft);color:var(--accent)}
+.seg{display:flex;background:var(--bg);border-radius:8px;padding:3px}
+.seg button{border:0;background:none;padding:4px 12px;border-radius:6px;cursor:pointer;color:var(--muted);font:inherit}
+.seg button.on{background:var(--card);color:var(--text);box-shadow:var(--sh)}
+.chart{display:flex;gap:10px;height:200px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.bars{flex:1;width:100%;position:relative}
+.bar{position:absolute;bottom:0;left:50%;transform:translateX(-50%);border-radius:6px 6px 2px 2px}
+.bar.exp{background:var(--line);width:70%}.bar.act{background:var(--accent);width:44%}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:600}
+td.num,th:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--bg)}
+.share{display:inline-block;width:60px;height:6px;background:var(--line);border-radius:3px;vertical-align:middle;margin-right:6px;overflow:hidden}
+.share i{display:block;height:100%;background:var(--accent)}
+.p-ok{color:var(--ok)}.p-warn{color:var(--warn)}.p-bad{color:var(--bad)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal .wd{font-size:11px;color:var(--muted);text-align:center;text-transform:uppercase}
+.cell{min-height:78px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--accent) calc(var(--f,0)*38%),var(--card));color:var(--text);text-align:left;padding:6px 8px;cursor:pointer;display:flex;flex-direction:column;gap:2px;font:inherit}
+.cell .dn{font-size:12px;color:var(--muted)}.cell b{font-size:15px}.cell small{font-size:10.5px;line-height:1.2}
+.cell.weekend{background:var(--bg)}
+.cell.holiday{background:var(--hol-soft)}.cell.holiday small{color:var(--hol)}
+.cell.leave{background:var(--leave-soft)}.cell.leave small{color:var(--leave)}
+.cell.short{border-color:var(--warn)}.cell.missing{border-color:var(--bad);border-style:dashed}
+.cell.today{outline:2px solid var(--accent);outline-offset:1px}
+.cell.blank{visibility:hidden}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.inline{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.inline input,.inline select{flex:1;min-width:120px;width:auto}
+.hl{list-style:none;margin:0;padding:0;max-height:320px;overflow:auto}
+.hl li{display:flex;align-items:center;gap:10px;padding:6px 4px;border-bottom:1px solid var(--line);font-size:13px}
+.hl li span{color:var(--muted);min-width:130px;font-variant-numeric:tabular-nums}
+.hl li b{flex:1;font-weight:500}
+.hl button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px}.hl button:hover{color:var(--bad)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}
+.chips label{display:flex;align-items:center;gap:4px;border:1px solid var(--line);padding:4px 10px;border-radius:99px;cursor:pointer;margin:0;color:var(--text);font-size:13px}
+.chips input{width:auto;margin:0}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,140px);background:#1c2230;color:#fff;padding:10px 14px;border-radius:10px;display:flex;gap:14px;align-items:center;transition:.25s;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw}
+.toast.show{transform:translate(-50%,0)}
+.toast button{background:none;border:0;color:#a5b4fc;font-weight:700;cursor:pointer;font:inherit}
+.empty{text-align:center;color:var(--muted);padding:30px}
+@media(max-width:900px){.log-grid,.grid2{grid-template-columns:1fr}.log-grid>form{position:static}.entry{grid-template-columns:1fr auto}.entry .chip{grid-column:1/-1;justify-self:start}.e-act{opacity:1}nav{order:3;width:100%;overflow-x:auto}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="logo">⏱</span>Timesheet</div>
+  <nav id="tabs">
+    <button data-tab="log" class="active">Log</button>
+    <button data-tab="dash">Dashboard</button>
+    <button data-tab="cal">Calendar</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+  <div class="spacer"></div>
+  <span id="status" class="pill">Local only</span>
+  <button id="syncBtn" class="btn ghost" title="Sync with GitHub">⟳ Sync</button>
+  <button id="themeBtn" class="btn ghost" title="Toggle theme">◐</button>
+</header>
+
+<main>
+<!-- LOG -->
+<section id="tab-log" class="tab active">
+  <div class="log-grid">
+    <form id="entryForm" class="card form" autocomplete="off">
+      <h2 id="formTitle">New entry</h2>
+      <label>Date<input type="date" name="date" required></label>
+      <div class="row2">
+        <label>Task type<select name="type"></select></label>
+        <label>Hours<input type="number" name="hours" step="0.05" min="0" max="24" required></label>
+      </div>
+      <label>Task name<input name="task" list="taskList" placeholder="Pick or type a new one"></label>
+      <datalist id="taskList"></datalist>
+      <label>Ticket #<input name="ticket" placeholder="e.g. REQ86095"></label>
+      <label>Description<textarea name="desc" rows="4"></textarea></label>
+      <div class="day-sum" id="daySum"></div>
+      <div class="actions">
+        <button class="btn primary" type="submit">Save <kbd>Ctrl+↵</kbd></button>
+        <button class="btn ghost" type="button" id="cancelEdit">Clear</button>
+      </div>
+    </form>
+    <div>
+      <div class="toolbar card">
+        <button class="btn ghost" id="prevM">‹</button><b id="monthLabel"></b><button class="btn ghost" id="nextM">›</button>
+        <button class="btn ghost sm" id="thisM">This month</button>
+        <div class="spacer"></div>
+        <input id="search" type="search" placeholder="Search all entries…  ( / )">
+      </div>
+      <div id="monthSummary" class="kpis small"></div>
+      <div id="dayList"></div>
+    </div>
+  </div>
+</section>
+
+<!-- DASHBOARD -->
+<section id="tab-dash" class="tab">
+  <div class="toolbar card">
+    <button class="btn ghost" id="prevY">‹</button><b id="yearLabel"></b><button class="btn ghost" id="nextY">›</button>
+    <div class="spacer"></div>
+    <div class="seg" id="unitSeg"><button data-u="h" class="on">Hours</button><button data-u="d">Days</button></div>
+  </div>
+  <div id="kpis" class="kpis"></div>
+  <div class="card"><h3>Logged vs expected hours</h3><div id="chart" class="chart"></div>
+    <div class="legend" style="margin-top:8px"><span><i style="background:var(--accent)"></i>Logged</span><span><i style="background:var(--line)"></i>Expected (elapsed working days × target)</span></div></div>
+  <div class="card"><h3>Monthly summary</h3><div class="tbl-wrap" id="monthTbl"></div></div>
+  <div class="card"><h3>By task type</h3><div class="tbl-wrap" id="typeTbl"></div></div>
+  <div class="card"><h3>By task</h3><div class="tbl-wrap" id="taskTbl"></div></div>
+</section>
+
+<!-- CALENDAR -->
+<section id="tab-cal" class="tab">
+  <div class="toolbar card">
+    <button class="btn ghost" id="prevC">‹</button><b id="calLabel"></b><button class="btn ghost" id="nextC">›</button>
+    <div class="spacer"></div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>Hours</span><span><i style="background:var(--hol-soft)"></i>Holiday</span><span><i style="background:var(--leave-soft)"></i>Leave</span><span><i style="border:1px dashed var(--bad)"></i>Missing</span><span><i style="border:1px solid var(--warn)"></i>Under target</span></div>
+  </div>
+  <div class="card"><div id="calGrid" class="cal"></div></div>
+  <div class="grid2">
+    <div class="card"><h3>Public holidays</h3>
+      <form id="holForm" class="inline"><input type="date" name="date" required><input name="name" placeholder="Holiday name" required><button class="btn">Add</button></form>
+      <div id="holList"></div></div>
+    <div class="card"><h3>Leaves</h3>
+      <form id="leaveForm" class="inline"><input type="date" name="from" required title="From"><input type="date" name="to" title="To (optional)">
+        <input name="name" list="leaveTypes" placeholder="Annual Leave"><datalist id="leaveTypes"><option value="Annual Leave"><option value="Sick Leave"><option value="Unpaid Leave"></datalist>
+        <button class="btn">Add</button></form>
+      <div id="leaveList"></div></div>
+  </div>
+</section>
+
+<!-- SETTINGS -->
+<section id="tab-settings" class="tab">
+  <div class="grid2">
+    <form id="cfgForm" class="card form">
+      <h3>Work rules & lists</h3>
+      <label>Daily target hours<input type="number" name="dailyTarget" step="0.25" min="1" max="24"></label>
+      <div class="muted" style="font-size:12px">Weekend days</div><div id="wkDays" class="chips"></div>
+      <label>Task types (one per line)<textarea name="taskTypes" rows="8"></textarea></label>
+      <label>Task names (one per line)<textarea name="taskNames" rows="12"></textarea></label>
+      <button class="btn primary">Save settings</button>
+    </form>
+    <div>
+      <form id="ghForm" class="card form" autocomplete="off">
+        <h3>GitHub sync</h3>
+        <p class="muted" style="margin-top:-6px">Saves locally first, then merges with a JSON file in your repo.</p>
+        <div class="row2"><label>Owner<input name="owner" placeholder="your-username"></label><label>Repo<input name="repo" placeholder="timesheet-data"></label></div>
+        <div class="row2"><label>Branch<input name="branch"></label><label>File path<input name="path"></label></div>
+        <label>Fine-grained token (Contents: read & write)<input name="token" type="password"></label>
+        <label class="check"><input type="checkbox" name="auto"> Auto-sync after every change</label>
+        <div class="actions"><button class="btn primary">Save &amp; sync</button><button type="button" class="btn ghost" id="forgetGh">Forget token</button></div>
+      </form>
+      <div class="card form">
+        <h3>Data</h3>
+        <p class="muted" id="dataInfo" style="margin-top:-6px"></p>
+        <div class="actions">
+          <label class="btn">⬆ Import Excel<input type="file" id="xlsxIn" accept=".xlsx,.xlsm,.xls" hidden></label>
+          <label class="btn">⬆ Import JSON<input type="file" id="jsonIn" accept=".json" hidden></label>
+          <button type="button" class="btn" id="expJson">⬇ Export JSON</button>
+          <button type="button" class="btn" id="expCsv">⬇ Export CSV</button>
+        </div>
+        <div class="actions" style="margin-top:14px"><button type="button" class="btn danger" id="clearLocal">Clear local data on this device</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<div id="toast" class="toast"></div>
+
+<script>
+/* ---------- constants & helpers ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const K={data:'ts.data.v1',gh:'ts.gh.v1',meta:'ts.meta.v1',theme:'ts.theme'};
+const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DEFAULT_CONFIG={
+  taskTypes:['Development','Internal Meeting','External Meeting','Adhoc Task','Training','Documentation','Analysis and Planning','Support'],
+  taskNames:['Bank API Integration','iVESTOR Dashboard','CRM Migration (Avanade)','Arena','Back office reports','Adhoc Task','Data Engineering & Reporting','Service Request','Meeting with CTO','AML System','DFM Scorecard','LLM Usecase (Gen AI)','Alteryx Upgrade & Migrate','SLB Integration','Customer Deduplication','IPO Subscription Dashboard','ZAG Analytics','BCP','Genesys Integration & Call center dashboard','eSAR Dashboard','ESC Reports & Dashboards'],
+  holidays:[],leaves:[],dailyTarget:8,weekend:[0,6],updatedAt:0};
+const pad=n=>String(n).padStart(2,'0');
+const todayISO=()=>{const t=new Date();return `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`};
+const dow=iso=>new Date(iso+'T00:00:00Z').getUTCDay();
+const addDays=(iso,n)=>{const d=new Date(iso+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
+const daysInMonth=(y,m)=>new Date(Date.UTC(y,m+1,0)).getUTCDate();
+const uid=()=>(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>String(Math.round(n*100)/100);
+const hue=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))%360;return h};
+const pct=p=>Math.round(p*100)+'%';
+const pcls=p=>p>=1?'p-ok':p>=.85?'p-warn':'p-bad';
+const shiftM=(o,d)=>{let m=o.m+d,y=o.y;while(m<0){m+=12;y--}while(m>11){m-=12;y++}return {y,m}};
+const nowMonth=()=>{const t=new Date();return {y:t.getFullYear(),m:t.getMonth()}};
+
+/* ---------- state ---------- */
+const canonE=x=>({id:x.id,date:x.date,type:x.type||'',task:x.task||'',ticket:x.ticket||'',hours:+x.hours||0,desc:x.desc||'',createdAt:x.createdAt||0,updatedAt:x.updatedAt||0,deleted:!!x.deleted});
+const canonC=c=>({taskTypes:c.taskTypes,taskNames:c.taskNames,holidays:c.holidays,leaves:c.leaves,dailyTarget:+c.dailyTarget||8,weekend:c.weekend,updatedAt:c.updatedAt||0});
+function normalize(d){d=d||{};return {version:1,config:canonC({...structuredClone(DEFAULT_CONFIG),...(d.config||{})}),entries:(Array.isArray(d.entries)?d.entries:[]).filter(e=>e&&e.id&&e.date).map(canonE)}}
+let db=normalize(JSON.parse(localStorage.getItem(K.data)||'null'));
+let meta={dirty:false,lastSync:0,...JSON.parse(localStorage.getItem(K.meta)||'{}')};
+let gh={branch:'main',path:'data/timesheet.json',auto:true,...JSON.parse(localStorage.getItem(K.gh)||'{}')};
+const live=()=>db.entries.filter(e=>!e.deleted);
+const saveLocal=()=>localStorage.setItem(K.data,JSON.stringify(db));
+const saveMeta=()=>localStorage.setItem(K.meta,JSON.stringify(meta));
+function persist(){saveLocal();meta.dirty=true;saveMeta();renderStatus();scheduleSync()}
+function touchCfg(){db.config.updatedAt=Date.now();persist()}
+const sortEntries=a=>a.sort((x,y)=>x.date.localeCompare(y.date)||(x.createdAt-y.createdAt)||String(x.id).localeCompare(String(y.id)));
+function serialize(d){const e=sortEntries(d.entries.map(canonE));return `{\n"version":1,\n"config":${JSON.stringify(canonC(d.config))},\n"entries":[\n${e.map(x=>JSON.stringify(x)).join(',\n')}\n]}\n`}
+function merge(a,b){
+  const map=new Map();
+  for(const e of [...a.entries,...b.entries]){const c=map.get(e.id);if(!c||(e.updatedAt||0)>(c.updatedAt||0))map.set(e.id,e)}
+  const config=(b.config.updatedAt||0)>(a.config.updatedAt||0)?b.config:a.config;
+  return normalize({config,entries:sortEntries([...map.values()])});
+}
+
+/* ---------- calendar logic ---------- */
+const holidayMap=()=>Object.fromEntries(db.config.holidays.map(h=>[h.date,h.name]));
+const leaveMap=()=>Object.fromEntries(db.config.leaves.map(h=>[h.date,h.name]));
+function dayInfo(iso,H=holidayMap(),L=leaveMap()){
+  if(H[iso])return {kind:'holiday',label:H[iso]};
+  if(L[iso])return {kind:'leave',label:L[iso]};
+  if(db.config.weekend.includes(dow(iso)))return {kind:'weekend',label:'Weekend'};
+  return {kind:'work',label:'Working Day'};
+}
+function computeYear(y){
+  const H=holidayMap(),L=leaveMap(),t=todayISO();
+  const M=Array.from({length:12},()=>({working:0,elapsed:0,hours:0,byType:{},byTask:{}}));
+  for(let m=0;m<12;m++)for(let d=1;d<=daysInMonth(y,m);d++){const iso=`${y}-${pad(m+1)}-${pad(d)}`;if(dayInfo(iso,H,L).kind==='work'){M[m].working++;if(iso<=t)M[m].elapsed++}}
+  live().forEach(e=>{if(+e.date.slice(0,4)!==y)return;const mm=M[+e.date.slice(5,7)-1];mm.hours+=e.hours;
+    const a=e.type||'(none)',b=e.task||'(none)';mm.byType[a]=(mm.byType[a]||0)+e.hours;mm.byTask[b]=(mm.byTask[b]||0)+e.hours});
+  return M;
+}
+
+/* ---------- GitHub sync ---------- */
+const ghReady=()=>!!(gh.owner&&gh.repo&&gh.token);
+const hdr=()=>({Authorization:`Bearer ${gh.token}`,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'});
+const ghUrl=()=>`https://api.github.com/repos/${encodeURIComponent(gh.owner)}/${encodeURIComponent(gh.repo)}/contents/${gh.path.split('/').map(encodeURIComponent).join('/')}`;
+const b64enc=s=>{const b=new TextEncoder().encode(s);let bin='';for(let i=0;i<b.length;i+=0x8000)bin+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(bin)};
+const b64dec=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g,'')),c=>c.charCodeAt(0)));
+async function ghErr(r,op){let m='';try{m=(await r.json()).message}catch{}
+  const hint={401:' — check the token',403:' — token needs Contents: read & write (or rate-limited)',404:' — repo not found or token has no access'}[r.status]||'';
+  return `GitHub ${op} failed: ${r.status} ${m}${hint}`}
+async function ghGet(){
+  const url=ghUrl()+'?ref='+encodeURIComponent(gh.branch);
+  const r=await fetch(url,{headers:hdr(),cache:'no-store'});
+  if(r.status===404)return {sha:null,data:null};
+  if(!r.ok)throw new Error(await ghErr(r,'read'));
+  const j=await r.json();let text;
+  if(j.encoding==='base64'&&j.content)text=b64dec(j.content);
+  else{const r2=await fetch(url,{headers:{...hdr(),Accept:'application/vnd.github.raw+json'},cache:'no-store'});if(!r2.ok)throw new Error(await ghErr(r2,'read'));text=await r2.text()}
+  return {sha:j.sha,data:text.trim()?JSON.parse(text):null};
+}
+async function ghPut(content,sha){
+  const body={message:`timesheet: sync ${new Date().toISOString().slice(0,16).replace('T',' ')}`,content:b64enc(content),branch:gh.branch};
+  if(sha)body.sha=sha;
+  const r=await fetch(ghUrl(),{method:'PUT',headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(r.status===409||r.status===422){const e=new Error('Conflict');e.conflict=true;throw e}
+  if(!r.ok)throw new Error(await ghErr(r,'write'));
+}
+let syncing=false,syncTimer;
+function scheduleSync(){if(!ghReady()||gh.auto===false)return;clearTimeout(syncTimer);syncTimer=setTimeout(()=>sync(),4000)}
+async function sync(manual=false){
+  if(!ghReady()){if(manual){toast('Set up GitHub sync first');switchTab('settings')}return}
+  if(syncing)return;
+  syncing=true;setStatus('busy','Syncing…');let ok=false;
+  try{
+    for(let attempt=0;;attempt++){
+      const remote=await ghGet();
+      const rd=remote.data?normalize(remote.data):null;
+      db=rd?merge(db,rd):db;saveLocal();
+      const out=serialize(db);
+      if(!rd||out!==serialize(rd)){try{await ghPut(out,remote.sha)}catch(e){if(e.conflict&&attempt<3)continue;throw e}}
+      meta.lastSync=Date.now();meta.dirty=serialize(db)!==out;saveMeta();break;
+    }
+    ok=true;rerender();if(manual)toast('Synced with GitHub');
+  }catch(e){console.error(e);toast(e.message||'Sync failed')}
+  finally{syncing=false;ok?renderStatus():setStatus('err','Sync failed');if(ok&&meta.dirty)scheduleSync()}
+}
+function setStatus(c,t){const p=$('#status');p.className='pill '+c;p.textContent=t}
+const ago=t=>{const s=(Date.now()-t)/1000;return s<60?'just now':s<3600?Math.floor(s/60)+'m ago':s<86400?Math.floor(s/3600)+'h ago':new Date(t).toLocaleDateString()};
+function renderStatus(){if(syncing)return;if(!ghReady())return setStatus('','Local only');if(meta.dirty)return setStatus('dirty','Unsynced changes');setStatus('ok',meta.lastSync?'Synced '+ago(meta.lastSync):'Ready')}
+
+/* ---------- UI: shared ---------- */
+let curTab='log';
+function switchTab(t){if(!['log','dash','cal','settings'].includes(t))t='log';curTab=t;
+  $$('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  $$('.tab').forEach(s=>s.classList.toggle('active',s.id==='tab-'+t));
+  history.replaceState(null,'','#'+t);renderTab()}
+const renderTab=()=>({log:renderLog,dash:renderDash,cal:renderCal,settings:renderSettings})[curTab]();
+function rerender(){fillSelects();if(curTab!=='settings')renderTab();updateDaySum()}
+let toastT;
+function toast(msg,label,fn){const t=$('#toast');t.innerHTML=`<span>${esc(msg)}</span>${label?`<button>${esc(label)}</button>`:''}`;
+  if(label)t.querySelector('button').onclick=()=>{fn();t.classList.remove('show')};
+  t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),5000)}
+const kpi=(l,v,c='')=>`<div class="kpi"><span>${l}</span><b class="${c}">${v}</b></div>`;
+const chip=t=>`<span class="chip" style="--h:${hue(t)}">${esc(t||'—')}</span>`;
+function applyTheme(t){t=t||localStorage.getItem(K.theme)||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t}
+
+/* ---------- LOG tab ---------- */
+const F=()=>$('#entryForm');
+let editingId=null,logMonth=nowMonth();
+function fillSelects(){const s=F().type,cur=s.value;
+  s.innerHTML=db.config.taskTypes.map(t=>`<option>${esc(t)}</option>`).join('');if(cur){ensureOption(s,cur);s.value=cur}
+  $('#taskList').innerHTML=db.config.taskNames.map(t=>`<option value="${esc(t)}">`).join('')}
+function ensureOption(sel,v){if(v&&![...sel.options].some(o=>o.value===v))sel.add(new Option(v,v))}
+function fillForm(e){const f=F();f.date.value=e.date||todayISO();ensureOption(f.type,e.type);f.type.value=e.type||db.config.taskTypes[0]||'';
+  f.task.value=e.task||'';f.ticket.value=e.ticket||'';f.hours.value=e.hours??'';f.desc.value=e.desc||'';updateDaySum()}
+function setMode(edit){$('#formTitle').textContent=edit?'Edit entry':'New entry';$('#cancelEdit').textContent=edit?'Cancel':'Clear'}
+function resetForm(date){const f=F();editingId=null;fillForm({date:date||f.date.value||todayISO(),type:f.type.value,task:f.task.value});setMode(false)}
+function startEdit(e){editingId=e.id;fillForm(e);setMode(true);F().scrollIntoView({behavior:'smooth',block:'start'});F().desc.focus()}
+function updateDaySum(){const d=F().date.value;if(!d){$('#daySum').textContent='';return}
+  const tot=live().filter(e=>e.date===d&&e.id!==editingId).reduce((s,e)=>s+e.hours,0);
+  $('#daySum').innerHTML=`${DAYS[dow(d)]} · ${esc(dayInfo(d).label)} · already logged <b>${fmt(tot)}h</b> of ${db.config.dailyTarget}h`}
+function saveEntry(ev){ev.preventDefault();const f=F(),now=Date.now();
+  const data={date:f.date.value,type:f.type.value,task:f.task.value.trim(),ticket:f.ticket.value.trim(),hours:parseFloat(f.hours.value),desc:f.desc.value.trim()};
+  if(!data.date||!(data.hours>0))return toast('Date and hours are required');
+  if(data.task&&!db.config.taskNames.includes(data.task)){db.config.taskNames.push(data.task);db.config.updatedAt=now}
+  if(data.type&&!db.config.taskTypes.includes(data.type)){db.config.taskTypes.push(data.type);db.config.updatedAt=now}
+  if(editingId){const e=db.entries.find(x=>x.id===editingId);Object.assign(e,data,{updatedAt:now})}
+  else db.entries.push(canonE({id:uid(),...data,createdAt:now,updatedAt:now}));
+  const wasEdit=!!editingId;persist();
+  logMonth={y:+data.date.slice(0,4),m:+data.date.slice(5,7)-1};
+  fillSelects();resetForm(data.date);f.ticket.value='';f.hours.value='';f.desc.value='';f.hours.focus();
+  renderLog();toast(wasEdit?'Entry updated':'Entry saved')}
+const match=(e,q)=>[e.type,e.task,e.ticket,e.desc,e.date].join(' ').toLowerCase().includes(q);
+function entryRow(e){return `<div class="entry">${chip(e.type)}<div><div class="e-task">${esc(e.task||'—')}${e.ticket?`<span class="ticket">${esc(e.ticket)}</span>`:''}</div>${e.desc?`<div class="e-desc">${esc(e.desc)}</div>`:''}</div>
+  <b class="e-h">${fmt(e.hours)}h</b><div class="e-act"><button title="Edit" data-act="edit" data-id="${e.id}">✎</button><button title="Copy to form (today)" data-act="dup" data-id="${e.id}">⧉</button><button title="Delete" data-act="del" data-id="${e.id}">🗑</button></div></div>`}
+function dayBlock(iso,list,H,L){const info=dayInfo(iso,H,L),tot=list.reduce((s,e)=>s+e.hours,0),tgt=db.config.dailyTarget;
+  const cls=info.kind!=='work'?'':tot===0?'bad':tot>=tgt?'ok':'warn';const d=new Date(iso+'T00:00:00Z');
+  return `<div class="day card ${info.kind}"><div class="day-h"><b>${DAYS[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}</b><span class="badge ${info.kind}">${esc(info.label)}</span>
+  <div class="spacer"></div><span class="tot ${cls}">${fmt(tot)}h</span><button class="btn ghost sm" data-act="add" data-date="${iso}">+ Add</button></div>
+  ${list.length?list.sort((a,b)=>a.createdAt-b.createdAt).map(entryRow).join(''):'<div class="muted none">Nothing logged</div>'}</div>`}
+function renderLog(){
+  const q=$('#search').value.trim().toLowerCase(),H=holidayMap(),L=leaveMap(),t=todayISO(),tgt=db.config.dailyTarget;
+  const byDate={};live().forEach(e=>(byDate[e.date]??=[]).push(e));
+  let dates;
+  if(q){dates=Object.keys(byDate).filter(d=>byDate[d].some(e=>match(e,q))).sort().reverse();$('#monthLabel').textContent='Search results';
+    const hits=live().filter(e=>match(e,q));
+    $('#monthSummary').innerHTML=kpi('Matching entries',hits.length)+kpi('Hours',fmt(hits.reduce((s,e)=>s+e.hours,0))+'h')+kpi('Days',dates.length);
+  }else{const {y,m}=logMonth;$('#monthLabel').textContent=`${MONTHS_FULL[m]} ${y}`;dates=[];
+    let working=0,elapsed=0,hours=0,missing=0;
+    for(let d=daysInMonth(y,m);d>=1;d--){const iso=`${y}-${pad(m+1)}-${pad(d)}`,k=dayInfo(iso,H,L).kind,h=(byDate[iso]||[]).reduce((s,e)=>s+e.hours,0);hours+=h;
+      if(k==='work'){working++;if(iso<=t)elapsed++;if(iso<t&&!h)missing++}
+      if(byDate[iso]||(k==='work'&&iso<=t))dates.push(iso)}
+    const p=elapsed?hours/(elapsed*tgt):0;
+    $('#monthSummary').innerHTML=kpi('Logged',fmt(hours)+'h')+kpi('Expected so far',fmt(elapsed*tgt)+'h')+kpi('Productivity',pct(p),pcls(p))+kpi('Working days',`${elapsed}/${working}`)+kpi('Days missing',missing,missing?'p-bad':'p-ok')}
+  $('#dayList').innerHTML=dates.length?dates.map(iso=>dayBlock(iso,(byDate[iso]||[]).filter(e=>!q||match(e,q)),H,L)).join(''):'<div class="empty card">No entries here yet.</div>'}
+
+/* ---------- DASHBOARD tab ---------- */
+let dashYear=new Date().getFullYear(),unit='h';
+function table(head,rows){return `<table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td${i?' class="num"':''}>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
+function renderDash(){
+  $('#yearLabel').textContent=dashYear;const M=computeYear(dashYear),tgt=db.config.dailyTarget,cv=h=>unit==='h'?h:h/tgt,u=unit==='h'?'h':'d';
+  const T=M.reduce((a,m)=>({working:a.working+m.working,elapsed:a.elapsed+m.elapsed,hours:a.hours+m.hours}),{working:0,elapsed:0,hours:0});
+  const prod=T.elapsed?T.hours/(T.elapsed*tgt):0;
+  $('#kpis').innerHTML=kpi('Working days',T.working)+kpi('Elapsed working days',T.elapsed)+kpi('Hours logged',fmt(T.hours))+kpi('Expected hours',fmt(T.elapsed*tgt))+kpi('Productivity',pct(prod),pcls(prod))+kpi('Avg per working day',fmt(T.elapsed?T.hours/T.elapsed:0)+'h');
+  const max=Math.max(1,...M.map(m=>Math.max(m.hours,m.elapsed*tgt)));
+  $('#chart').innerHTML=M.map((m,i)=>`<div class="bar-col" title="${MONTHS[i]}: ${fmt(m.hours)}h logged / ${fmt(m.elapsed*tgt)}h expected"><div class="bars"><div class="bar exp" style="height:${m.elapsed*tgt/max*100}%"></div><div class="bar act" style="height:${m.hours/max*100}%"></div></div><span>${MONTHS[i]}</span></div>`).join('');
+  const pc=p=>`<span class="${pcls(p)}">${pct(p)}</span>`;
+  $('#monthTbl').innerHTML=table(['',...MONTHS,'Total'],[
+    ['Working days',...M.map(m=>m.working),T.working],
+    ['Elapsed',...M.map(m=>m.elapsed),T.elapsed],
+    [`Logged (${u})`,...M.map(m=>fmt(cv(m.hours))),`<b>${fmt(cv(T.hours))}</b>`],
+    [`Expected (${u})`,...M.map(m=>fmt(cv(m.elapsed*tgt))),fmt(cv(T.elapsed*tgt))],
+    ['Productivity',...M.map(m=>m.elapsed?pc(m.hours/(m.elapsed*tgt)):'—'),pc(prod)]]);
+  const matrix=(key,asChip)=>{const keys=new Set();M.forEach(m=>Object.keys(m[key]).forEach(k=>keys.add(k)));
+    const rows=[...keys].map(k=>{const v=M.map(m=>m[key][k]||0);return {k,v,t:v.reduce((a,b)=>a+b,0)}}).sort((a,b)=>b.t-a.t);
+    if(!rows.length)return '<p class="muted">No data for this year.</p>';
+    return table(['',...MONTHS,'Total','Share'],rows.map(r=>[asChip?chip(r.k):esc(r.k),...r.v.map(x=>x?fmt(cv(x)):'<span class="muted">·</span>'),`<b>${fmt(cv(r.t))}</b>`,`<span class="share"><i style="width:${r.t/T.hours*100}%"></i></span>${Math.round(r.t/T.hours*100)}%`]))};
+  $('#typeTbl').innerHTML=matrix('byType',true);$('#taskTbl').innerHTML=matrix('byTask',false)}
+
+/* ---------- CALENDAR tab ---------- */
+let calMonth=nowMonth();
+function hlList(arr,kind){return arr.length?`<ul class="hl">${[...arr].sort((a,b)=>b.date.localeCompare(a.date)).map(h=>`<li><span>${h.date} · ${DAYS[dow(h.date)]}</span><b>${esc(h.name)}</b><button data-kind="${kind}" data-date="${h.date}" title="Remove">×</button></li>`).join('')}</ul>`:'<p class="muted">None yet.</p>'}
+function upsertDay(arr,date,name){const i=arr.findIndex(x=>x.date===date);i>=0?arr[i]={date,name}:arr.push({date,name})}
+function renderCal(){
+  const {y,m}=calMonth,H=holidayMap(),L=leaveMap(),t=todayISO(),tgt=db.config.dailyTarget;$('#calLabel').textContent=`${MONTHS_FULL[m]} ${y}`;
+  const hrs={};live().forEach(e=>hrs[e.date]=(hrs[e.date]||0)+e.hours);
+  const off=(dow(`${y}-${pad(m+1)}-01`)+6)%7;
+  let html=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div class="wd">${d}</div>`).join('')+'<div class="cell blank"></div>'.repeat(off);
+  for(let d=1;d<=daysInMonth(y,m);d++){const iso=`${y}-${pad(m+1)}-${pad(d)}`,i=dayInfo(iso,H,L),h=hrs[iso]||0;
+    let c=i.kind;if(i.kind==='work'&&iso<t)c+=!h?' missing':h<tgt?' short':'';if(iso===t)c+=' today';
+    html+=`<button class="cell ${c}" data-date="${iso}" style="--f:${i.kind==='work'?Math.min(h/tgt,1.2):0}"><span class="dn">${d}</span>${h?`<b>${fmt(h)}h</b>`:''}<small>${i.kind==='holiday'||i.kind==='leave'?esc(i.label):''}</small></button>`}
+  $('#calGrid').innerHTML=html;$('#holList').innerHTML=hlList(db.config.holidays,'holidays');$('#leaveList').innerHTML=hlList(db.config.leaves,'leaves')}
+
+/* ---------- SETTINGS tab ---------- */
+function renderSettings(){const c=db.config,f=$('#cfgForm');f.dailyTarget.value=c.dailyTarget;f.taskTypes.value=c.taskTypes.join('\n');f.taskNames.value=c.taskNames.join('\n');
+  $('#wkDays').innerHTML=DAYS.map((d,i)=>`<label><input type="checkbox" value="${i}" ${c.weekend.includes(i)?'checked':''}>${d}</label>`).join('');
+  const g=$('#ghForm');g.owner.value=gh.owner||'';g.repo.value=gh.repo||'';g.branch.value=gh.branch||'main';g.path.value=gh.path||'data/timesheet.json';
+  g.token.value='';g.token.placeholder=gh.token?'•••••• saved (leave blank to keep)':'github_pat_…';g.auto.checked=gh.auto!==false;
+  $('#dataInfo').textContent=`${live().length} entries on this device · ${db.config.holidays.length} holidays · ${db.config.leaves.length} leave days`}
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function toCSV(){const H=holidayMap(),L=leaveMap(),q=v=>{v=String(v??'');return /[",\n\r]/.test(v)?`"${v.replace(/"/g,'""')}"`:v};
+  const rows=[['Date','Day','Task Type','Task Name','Ticket #','Time (Hrs)','Description','Day Type']];
+  sortEntries(live()).forEach(e=>rows.push([e.date,DAYS[dow(e.date)],e.type,e.task,e.ticket,e.hours,e.desc,dayInfo(e.date,H,L).label]));
+  return '\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n')}
+function toISO(v){if(v==null||v==='')return null;
+  if(typeof v==='number')return new Date(Math.round((v-25569)*864e5)).toISOString().slice(0,10);
+  if(v instanceof Date)return `${v.getFullYear()}-${pad(v.getMonth()+1)}-${pad(v.getDate())}`;
+  const s=String(v).trim();let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
+  m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);return m?`${m[3]}-${pad(m[2])}-${pad(m[1])}`:null}
+function loadXLSX(){return window.XLSX?Promise.resolve():new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';s.onload=res;s.onerror=()=>rej(new Error('Could not load the Excel reader (needs internet)'));document.head.appendChild(s)})}
+async function importXlsx(file){
+  await loadXLSX();const wb=XLSX.read(await file.arrayBuffer());
+  const sheet=n=>{const k=wb.SheetNames.find(s=>s.trim().toLowerCase()===n);return k?XLSX.utils.sheet_to_json(wb.Sheets[k],{header:1,raw:true,defval:''}):null};
+  const ts=sheet('timesheet');if(!ts)throw new Error('No "Timesheet" sheet found');
+  const head=ts[0].map(h=>String(h).trim().toLowerCase()),col=p=>head.findIndex(h=>h.startsWith(p));
+  const c={n:col('#'),date:col('date'),type:col('task type'),task:col('task name'),ticket:col('ticket'),hours:col('time'),desc:col('description')};
+  if(c.date<0||c.hours<0)throw new Error('Could not find the Date / Time (Hrs) columns');
+  const now=Date.now(),cfg=db.config,idx=new Map(db.entries.map((e,i)=>[e.id,i])),addTo=(a,v)=>{if(v&&!a.includes(v))a.push(v)},str=v=>String(v??'').trim();
+  let n=0,skip=0;
+  ts.slice(1).forEach((r,i)=>{const date=toISO(r[c.date]),hours=parseFloat(r[c.hours]);
+    if(!date||!(hours>0)){if(r.some(x=>x!==''))skip++;return}
+    const num=c.n>=0&&r[c.n]!==''?r[c.n]:'r'+(i+2);
+    const e=canonE({id:`xl-${num}-${date}`,date,type:str(r[c.type]),task:str(r[c.task]),ticket:c.ticket>=0?str(r[c.ticket]):'',hours,desc:c.desc>=0?str(r[c.desc]):'',createdAt:now+i,updatedAt:now});
+    if(idx.has(e.id))db.entries[idx.get(e.id)]=e;else{idx.set(e.id,db.entries.length);db.entries.push(e)}
+    addTo(cfg.taskTypes,e.type);addTo(cfg.taskNames,e.task);n++});
+  const lv=sheet('leaves');if(lv)lv.slice(1).forEach(r=>{const d=toISO(r[1]);if(d&&str(r[2]))upsertDay(cfg.leaves,d,str(r[2]))});
+  const ph=sheet('public holidays');if(ph)ph.slice(1).forEach(r=>{const d=toISO(r[1]);if(d&&str(r[2]))upsertDay(cfg.holidays,d,str(r[2]))});
+  const su=sheet('setup');if(su){const h=su[0].map(x=>str(x).toLowerCase()),ti=h.indexOf('task type'),ni=h.indexOf('task name');
+    su.slice(1).forEach(r=>{if(ti>=0)addTo(cfg.taskTypes,str(r[ti]));if(ni>=0)addTo(cfg.taskNames,str(r[ni]))})}
+  touchCfg();rerender();renderSettings();toast(`Imported ${n} entries${skip?` · skipped ${skip} incomplete rows`:''}`)}
+
+/* ---------- events ---------- */
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)switchTab(b.dataset.tab)};
+$('#syncBtn').onclick=()=>sync(true);
+$('#themeBtn').onclick=()=>{const t=document.documentElement.dataset.theme==='dark'?'light':'dark';localStorage.setItem(K.theme,t);applyTheme(t)};
+F().onsubmit=saveEntry;
+F().addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();F().requestSubmit()}});
+F().date.onchange=updateDaySum;
+$('#cancelEdit').onclick=()=>{editingId=null;fillForm({date:F().date.value});setMode(false)};
+$('#prevM').onclick=()=>{logMonth=shiftM(logMonth,-1);renderLog()};
+$('#nextM').onclick=()=>{logMonth=shiftM(logMonth,1);renderLog()};
+$('#thisM').onclick=()=>{logMonth=nowMonth();$('#search').value='';renderLog()};
+$('#search').oninput=renderLog;
+document.addEventListener('keydown',e=>{if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();switchTab('log');$('#search').focus()}});
+$('#dayList').onclick=ev=>{const b=ev.target.closest('[data-act]');if(!b)return;const e=db.entries.find(x=>x.id===b.dataset.id);
+  if(b.dataset.act==='add'){resetForm(b.dataset.date);F().scrollIntoView({behavior:'smooth'});F().hours.focus()}
+  else if(b.dataset.act==='edit')startEdit(e);
+  else if(b.dataset.act==='dup'){editingId=null;fillForm({...e,date:todayISO()});setMode(false);F().hours.focus()}
+  else if(b.dataset.act==='del'){e.deleted=true;e.updatedAt=Date.now();persist();renderLog();updateDaySum();
+    toast('Entry deleted','Undo',()=>{e.deleted=false;e.updatedAt=Date.now();persist();renderLog();updateDaySum()})}};
+$('#prevY').onclick=()=>{dashYear--;renderDash()};$('#nextY').onclick=()=>{dashYear++;renderDash()};
+$('#unitSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;unit=b.dataset.u;$$('#unitSeg button').forEach(x=>x.classList.toggle('on',x===b));renderDash()};
+$('#prevC').onclick=()=>{calMonth=shiftM(calMonth,-1);renderCal()};$('#nextC').onclick=()=>{calMonth=shiftM(calMonth,1);renderCal()};
+$('#calGrid').onclick=e=>{const c=e.target.closest('.cell[data-date]');if(!c)return;const d=c.dataset.date;
+  logMonth={y:+d.slice(0,4),m:+d.slice(5,7)-1};$('#search').value='';switchTab('log');resetForm(d);F().hours.focus()};
+$('#holForm').onsubmit=ev=>{ev.preventDefault();const f=ev.target;upsertDay(db.config.holidays,f.date.value,f.name.value.trim());touchCfg();f.reset();renderCal()};
+$('#leaveForm').onsubmit=ev=>{ev.preventDefault();const f=ev.target;let d=f.from.value;const to=f.to.value||d;
+  if(to<d)return toast('End date is before start date');let n=0;
+  while(d<=to&&n<366){upsertDay(db.config.leaves,d,f.name.value.trim()||'Annual Leave');d=addDays(d,1);n++}
+  touchCfg();f.reset();renderCal();toast(`Added ${n} leave day(s)`)};
+['#holList','#leaveList'].forEach(s=>$(s).onclick=e=>{const b=e.target.closest('button[data-kind]');if(!b)return;
+  db.config[b.dataset.kind]=db.config[b.dataset.kind].filter(x=>x.date!==b.dataset.date);touchCfg();renderCal()});
+$('#cfgForm').onsubmit=ev=>{ev.preventDefault();const f=ev.target,lines=v=>[...new Set(v.split('\n').map(s=>s.trim()).filter(Boolean))];
+  Object.assign(db.config,{dailyTarget:parseFloat(f.dailyTarget.value)||8,taskTypes:lines(f.taskTypes.value),taskNames:lines(f.taskNames.value),
+    weekend:$$('#wkDays input:checked').map(i=>+i.value)});touchCfg();fillSelects();toast('Settings saved')};
+$('#ghForm').onsubmit=ev=>{ev.preventDefault();const f=ev.target;
+  gh={owner:f.owner.value.trim(),repo:f.repo.value.trim(),branch:f.branch.value.trim()||'main',path:f.path.value.trim().replace(/^\/+/,'')||'data/timesheet.json',token:f.token.value.trim()||gh.token||'',auto:f.auto.checked};
+  localStorage.setItem(K.gh,JSON.stringify(gh));renderSettings();sync(true)};
+$('#forgetGh').onclick=()=>{gh.token='';localStorage.setItem(K.gh,JSON.stringify(gh));renderSettings();renderStatus();toast('Token removed from this browser')};
+$('#xlsxIn').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{await importXlsx(file)}catch(err){toast(err.message)}};
+$('#jsonIn').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;
+  try{db=merge(db,normalize(JSON.parse(await file.text())));persist();rerender();renderSettings();toast('JSON merged')}catch(err){toast('Invalid JSON file')}};
+$('#expJson').onclick=()=>download(`timesheet-${todayISO()}.json`,serialize(db),'application/json');
+$('#expCsv').onclick=()=>download(`timesheet-${todayISO()}.csv`,toCSV(),'text/csv');
+$('#clearLocal').onclick=()=>{if(!confirm('Remove all timesheet data from THIS browser? (Data already synced to GitHub stays there.)'))return;
+  localStorage.removeItem(K.data);localStorage.removeItem(K.meta);location.reload()};
+window.addEventListener('focus',()=>{if(ghReady()&&!syncing&&Date.now()-meta.lastSync>60000)sync()});
+setInterval(renderStatus,30000);
+
+/* ---------- boot ---------- */
+applyTheme();fillSelects();fillForm({date:todayISO()});renderStatus();switchTab(location.hash.slice(1)||'log');
+if(ghReady())sync();
+</script>
+</body>
+</html>
