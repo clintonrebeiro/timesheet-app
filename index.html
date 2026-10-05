@@ -38,6 +38,7 @@ nav button{border:0;background:none;color:var(--muted);padding:6px 14px;border-r
 nav button.active{background:var(--card);color:var(--text);box-shadow:var(--sh);font-weight:600}
 .banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 20px;background:var(--warn-soft);color:var(--warn);border-bottom:1px solid var(--line);font-size:13px;font-weight:500}
 .banner.expired{background:var(--bad-soft);color:var(--bad)}
+.banner.info{background:var(--accent-soft);color:var(--accent)}
 .banner a{text-decoration:none}
 .spacer{flex:1}
 main{max-width:1300px;margin:0 auto;padding:18px}
@@ -122,9 +123,24 @@ tbody tr:hover{background:var(--bg)}
 .cell.weekend{background:var(--bg)}
 .cell.holiday{background:var(--hol-soft)}.cell.holiday small{color:var(--hol)}
 .cell.leave{background:var(--leave-soft)}.cell.leave small{color:var(--leave)}
-.cell.short{border-color:var(--warn)}.cell.missing{border-color:var(--bad);border-style:dashed}
-.cell.today{outline:2px solid var(--accent);outline-offset:1px}
+.cell.short,.wk-day.short{border-color:var(--warn)}.cell.missing,.wk-day.missing{border-color:var(--bad);border-style:dashed}
+.cell.today,.wk-day.today{outline:2px solid var(--accent);outline-offset:1px}
 .cell.blank{visibility:hidden}
+.wk-days{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.wk-day{border:1px solid var(--line);border-radius:10px;padding:8px;cursor:pointer;background:var(--card);display:flex;flex-direction:column;gap:4px;font:inherit;color:var(--text);text-align:left;min-height:160px}
+.wk-day b{font-size:16px;font-variant-numeric:tabular-nums}
+.wk-day small{font-size:10.5px;min-height:13px}
+.wk-day.weekend{background:var(--bg)}.wk-day.holiday{background:var(--hol-soft)}.wk-day.holiday small{color:var(--hol)}.wk-day.leave{background:var(--leave-soft)}.wk-day.leave small{color:var(--leave)}
+.bar-wrap{flex:1;position:relative;background:var(--bg);border-radius:6px;min-height:70px;overflow:hidden}
+.wk-day.weekend .bar-wrap{background:var(--card)}
+.fill{position:absolute;bottom:0;left:0;right:0;background:var(--accent);border-radius:6px 6px 0 0}
+.tline{position:absolute;left:0;right:0;border-top:2px dashed var(--muted);opacity:.45;z-index:1}
+.hbar{display:grid;grid-template-columns:minmax(120px,220px) 1fr 92px;gap:10px;align-items:center;padding:5px 0;font-size:13px}
+.hbar>div:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar .track{height:8px;background:var(--line);border-radius:4px;overflow:hidden}.hbar .track i{display:block;height:100%;background:var(--accent)}
+.hbar .num{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.tickets{display:flex;flex-wrap:wrap;gap:6px}
+.hl-item{padding:6px 0;border-top:1px dashed var(--line);font-size:13px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
 .inline{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .inline input,.inline select{flex:1;min-width:120px;width:auto}
@@ -142,7 +158,8 @@ tbody tr:hover{background:var(--bg)}
 .toast.show{transform:translate(-50%,0)}
 .toast button{background:none;border:0;color:#a5b4fc;font-weight:700;cursor:pointer;font:inherit}
 .empty{text-align:center;color:var(--muted);padding:30px}
-@media(max-width:900px){.log-grid,.grid2{grid-template-columns:1fr}.log-grid>form{position:static}.entry{grid-template-columns:1fr auto}.entry .chip{grid-column:1/-1;justify-self:start}.e-act{opacity:1}nav{order:3;width:100%;overflow-x:auto}}
+@media(max-width:900px){.log-grid,.grid2{grid-template-columns:1fr}.log-grid>form{position:static}.entry{grid-template-columns:1fr auto}.entry .chip{grid-column:1/-1;justify-self:start}.e-act{opacity:1}nav{order:3;width:100%;overflow-x:auto}
+  .wk-days{gap:4px}.wk-day{padding:5px;min-height:130px}.wk-day b{font-size:13px}.hbar{grid-template-columns:110px 1fr 80px}}
 </style>
 </head>
 <body>
@@ -184,6 +201,7 @@ tbody tr:hover{background:var(--bg)}
   <div class="brand"><span class="logo">⏱</span>Timesheet</div>
   <nav id="tabs">
     <button data-tab="log" class="active">Log</button>
+    <button data-tab="week">Week</button>
     <button data-tab="dash">Dashboard</button>
     <button data-tab="cal">Calendar</button>
     <button data-tab="settings">Settings</button>
@@ -196,6 +214,10 @@ tbody tr:hover{background:var(--bg)}
   <button id="themeBtn" class="btn ghost" title="Toggle theme">◐</button>
   <button id="lockBtn" class="btn ghost" title="Sign out">🔒</button>
 </header>
+<div id="updateBanner" class="banner info" hidden>
+  <span>✨ A new version of the app is available.</span><div class="spacer"></div>
+  <button class="btn sm primary" id="updateReload">Reload now</button>
+</div>
 <div id="expiryBanner" class="banner" hidden>
   <span id="expiryText"></span><div class="spacer"></div>
   <a class="btn sm" href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noopener">Create new token ↗</a>
@@ -230,12 +252,36 @@ tbody tr:hover{background:var(--bg)}
         <button class="btn ghost" id="prevM">‹</button><b id="monthLabel"></b><button class="btn ghost" id="nextM">›</button>
         <button class="btn ghost sm" id="thisM">This month</button>
         <button class="btn ghost sm" id="starOnly">★ Highlights</button>
+        <button class="btn ghost sm" id="logCsv" title="Export what is shown as CSV">⬇ CSV</button>
         <div class="spacer"></div>
         <input id="search" type="search" placeholder="Search all entries…  ( / )">
       </div>
       <div id="monthSummary" class="kpis small"></div>
       <div id="dayList"></div>
     </div>
+  </div>
+</section>
+
+<section id="tab-week" class="tab">
+  <div class="toolbar card">
+    <button class="btn ghost" id="prevW">‹</button><b id="weekLabel" style="min-width:230px"></b><button class="btn ghost" id="nextW">›</button>
+    <button class="btn ghost sm" id="thisW">This week</button>
+    <div class="spacer"></div>
+    <button class="btn ghost sm" id="weekCopy">⧉ Copy summary</button>
+    <button class="btn ghost sm" id="weekCsv">⬇ CSV</button>
+  </div>
+  <div id="weekKpis" class="kpis small"></div>
+  <div class="card"><div id="weekDays" class="wk-days"></div>
+    <div class="legend" style="margin-top:8px"><span><i style="border-top:2px dashed var(--muted);height:0;border-radius:0"></i>Daily target</span><span><i style="border:1px dashed var(--bad)"></i>Missing</span><span><i style="border:1px solid var(--warn)"></i>Under target</span></div></div>
+  <div class="grid2">
+    <div class="card"><h3>Where the time went</h3><div id="weekTypes"></div></div>
+    <div class="card"><h3>Tasks</h3><div id="weekTasks"></div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>★ Highlights</h3><div id="weekStars"></div>
+      <h3 style="margin-top:18px">Tickets</h3><div id="weekTickets" class="tickets"></div></div>
+    <div class="card"><h3>Weekly notes <span class="muted" id="noteState" style="font-weight:400;font-size:12px"></span></h3>
+      <textarea id="weekNote" rows="10" placeholder="What went well? What got in the way? Focus for next week…"></textarea></div>
   </div>
 </section>
 
@@ -293,6 +339,20 @@ tbody tr:hover{background:var(--bg)}
         <div class="actions"><button class="btn primary">Save &amp; sync</button></div>
       </form>
       <div class="card form">
+        <h3>Data & app</h3>
+        <p class="muted" id="dataInfo" style="margin-top:-6px"></p>
+        <div class="row2"><label>From month<input type="month" id="csvFrom"></label><label>To month<input type="month" id="csvTo"></label></div>
+        <div class="actions" style="margin-top:-4px"><button type="button" class="btn primary" id="expRange">⬇ Export CSV for these months</button></div>
+        <div class="actions" style="margin-top:14px">
+          <label class="btn">⬆ Import Excel<input type="file" id="xlsxIn" accept=".xlsx,.xlsm,.xls" hidden></label>
+          <label class="btn">⬆ Import JSON<input type="file" id="jsonIn" accept=".json" hidden></label>
+          <button type="button" class="btn" id="expJson">⬇ Export JSON</button>
+          <button type="button" class="btn" id="expCsv">⬇ Export all CSV</button>
+          <button type="button" class="btn" id="iconsBtn">⬇ App icons (PNG)</button>
+        </div>
+        <div class="actions" style="margin-top:14px;align-items:center"><span class="muted" id="verInfo"></span><button type="button" class="btn sm" id="checkUpd">Check for updates</button></div>
+      </div>
+      <div class="card form">
         <h3>Security</h3>
         <p class="muted" style="margin-top:-6px">Your token and this device's copy of your data are encrypted with your passphrase.</p>
         <form id="passForm">
@@ -304,17 +364,6 @@ tbody tr:hover{background:var(--bg)}
         <div class="actions"><button type="button" class="btn" id="copyVault">Copy portable login key</button></div>
         <div class="actions" style="margin-top:16px"><button type="button" class="btn" id="signOutBtn">Sign out</button><button type="button" class="btn danger" id="wipeBtn">Sign out &amp; forget this device</button></div>
       </div>
-      <div class="card form">
-        <h3>Data & app</h3>
-        <p class="muted" id="dataInfo" style="margin-top:-6px"></p>
-        <div class="actions">
-          <label class="btn">⬆ Import Excel<input type="file" id="xlsxIn" accept=".xlsx,.xlsm,.xls" hidden></label>
-          <label class="btn">⬆ Import JSON<input type="file" id="jsonIn" accept=".json" hidden></label>
-          <button type="button" class="btn" id="expJson">⬇ Export JSON</button>
-          <button type="button" class="btn" id="expCsv">⬇ Export CSV</button>
-          <button type="button" class="btn" id="iconsBtn">⬇ App icons (PNG)</button>
-        </div>
-      </div>
     </div>
   </div>
 </section>
@@ -325,6 +374,8 @@ tbody tr:hover{background:var(--bg)}
 <script>
 /* Paste your portable login key between the quotes (Settings → Security). Leave empty to disable. */
 const PORTABLE_VAULT = '{"v":1,"salt":"cpyxNOkzCp9IBjwOwWS7wg==","gh":"10K3iPJEUcc0Cgga.e4wiz30O93tLMfHZ2EZvd7eXD1MO2DCAWTpNj2dhnJDRuV6UmJhnzRCO3AWEA4T/FxuF6LNNjJRCyuoj3mFTXlYefFEdHu5JuTpVF7VG7XC7lHyOq4GZjGq5hWlf9cyNRW/eC2zCRa/1Nz/JIH8U4LuUpPkVIFeDwYUYFSb8L2G32LAH2OP6zW8UqoQvvFPftwSqGx3EQP74CwRx7g7L6e3RaYke4kzlV2jbyVHU+Db5OxfAd1o1lZha5MBJ6MTFQZQJwR2L19EJiPoWaogStryMrULuBJFaur2spS+LSedEMkE="}';
+/* Bump this whenever you change the file, so installed apps show "new version available". */
+const APP_VERSION = '2026.10.05-3';
 
 /* ---------- constants & helpers ---------- */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -343,6 +394,7 @@ const addDays=(iso,n)=>{const d=new Date(iso+'T00:00:00Z');d.setUTCDate(d.getUTC
 const daysBetween=(a,b)=>Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/864e5);
 const niceDate=iso=>new Date(iso+'T00:00:00Z').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
 const daysInMonth=(y,m)=>new Date(Date.UTC(y,m+1,0)).getUTCDate();
+const mondayOf=iso=>addDays(iso,-((dow(iso)+6)%7));
 const uid=()=>(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>String(Math.round(n*100)/100);
@@ -355,12 +407,21 @@ const u8b64=u=>{let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode
 const b64u8=s=>Uint8Array.from(atob(s.replace(/\s/g,'')),c=>c.charCodeAt(0));
 const b64enc=s=>u8b64(new TextEncoder().encode(s));
 const b64dec=s=>new TextDecoder().decode(b64u8(s));
+if(/[?&]u=/.test(location.search))history.replaceState(null,'',location.pathname+location.hash);
 
-/* ---------- PWA ---------- */
+/* ---------- PWA & updates ---------- */
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
-let installEvt=null;
+let installEvt=null,lastUpdCheck=0;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;$('#installBtn').hidden=false});
 window.addEventListener('appinstalled',()=>{installEvt=null;$('#installBtn').hidden=true;toast('Installed as an app')});
+async function checkUpdate(manual=false){
+  if(!navigator.onLine||!location.protocol.startsWith('http')){if(manual)toast("Can't check while offline");return}
+  lastUpdCheck=Date.now();
+  try{const txt=await (await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'})).text();
+    const m=txt.match(/const APP_VERSION\s*=\s*'([^']+)'/);
+    if(m&&m[1]!==APP_VERSION){$('#updateBanner').hidden=false;if(manual)toast(`Version ${m[1]} is available`)}
+    else if(manual)toast("You're on the latest version")}catch{if(manual)toast('Could not check for updates')}}
+async function reloadApp(){await saveChain;location.href=location.pathname+'?u='+Date.now()+location.hash}
 function drawIcon(s){const c=document.createElement('canvas');c.width=c.height=s;const x=c.getContext('2d');
   const g=x.createLinearGradient(0,0,s,s);g.addColorStop(0,'#6366f1');g.addColorStop(1,'#4338ca');x.fillStyle=g;x.fillRect(0,0,s,s);
   const cx=s/2,r=s*.26;x.strokeStyle='#fff';x.lineWidth=s*.055;x.lineCap='round';
@@ -396,6 +457,7 @@ function openLogin(){const v=getVault();$('#authModal').hidden=false;$('#loginFo
 function closeLogin(){$('#authModal').hidden=true;$('#loginErr').textContent='';$('#setupErr').textContent='';if(location.hash==='#login')history.replaceState(null,'',location.pathname)}
 async function signOut(wipe){
   if(wipe&&!confirm('Sign out and remove your saved login and all local timesheet data from this device?\n\nData already synced to GitHub stays safe.'))return;
+  saveNote();
   if(meta.dirty&&ghReady()&&navigator.onLine)await sync();
   await saveChain;
   sessionStorage.removeItem(K.key);localStorage.removeItem(K.key);
@@ -409,7 +471,8 @@ async function boot(){applyTheme();const v=getVault(),raw=sessionStorage.getItem
 /* ---------- state ---------- */
 const canonE=x=>({id:x.id,date:x.date,type:x.type||'',task:x.task||'',ticket:x.ticket||'',hours:+x.hours||0,desc:x.desc||'',star:!!x.star,createdAt:x.createdAt||0,updatedAt:x.updatedAt||0,deleted:!!x.deleted});
 const canonC=c=>({taskTypes:c.taskTypes,taskNames:c.taskNames,holidays:c.holidays,leaves:c.leaves,dailyTarget:+c.dailyTarget||8,weekend:c.weekend,updatedAt:c.updatedAt||0});
-function normalize(d){d=d||{};return {version:1,config:canonC({...structuredClone(DEFAULT_CONFIG),...(d.config||{})}),entries:(Array.isArray(d.entries)?d.entries:[]).filter(e=>e&&e.id&&e.date).map(canonE)}}
+const canonW=w=>{const o={};Object.keys(w||{}).sort().forEach(k=>{const x=w[k];if(x&&/^\d{4}-\d{2}-\d{2}$/.test(k))o[k]={note:String(x.note||''),updatedAt:x.updatedAt||0}});return o};
+function normalize(d){d=d||{};return {version:1,config:canonC({...structuredClone(DEFAULT_CONFIG),...(d.config||{})}),weeks:canonW(d.weeks),entries:(Array.isArray(d.entries)?d.entries:[]).filter(e=>e&&e.id&&e.date).map(canonE)}}
 let db=normalize(null);
 let meta={dirty:false,lastSync:0,...JSON.parse(localStorage.getItem(K.meta)||'{}')};
 let gh={};
@@ -421,11 +484,12 @@ const saveMeta=()=>localStorage.setItem(K.meta,JSON.stringify(meta));
 function persist(){saveLocal();meta.dirty=true;saveMeta();renderStatus();scheduleSync()}
 function touchCfg(){db.config.updatedAt=Date.now();persist()}
 const sortEntries=a=>a.sort((x,y)=>x.date.localeCompare(y.date)||(x.createdAt-y.createdAt)||String(x.id).localeCompare(String(y.id)));
-function serialize(d){const e=sortEntries(d.entries.map(canonE));return `{\n"version":1,\n"config":${JSON.stringify(canonC(d.config))},\n"entries":[\n${e.map(x=>JSON.stringify(x)).join(',\n')}\n]}\n`}
+function serialize(d){const e=sortEntries(d.entries.map(canonE));return `{\n"version":1,\n"config":${JSON.stringify(canonC(d.config))},\n"weeks":${JSON.stringify(canonW(d.weeks))},\n"entries":[\n${e.map(x=>JSON.stringify(x)).join(',\n')}\n]}\n`}
 function merge(a,b){const map=new Map();
   for(const e of [...a.entries,...b.entries]){const c=map.get(e.id);if(!c||(e.updatedAt||0)>(c.updatedAt||0))map.set(e.id,e)}
+  const weeks={...a.weeks};for(const [k,v] of Object.entries(b.weeks||{}))if(!weeks[k]||(v.updatedAt||0)>(weeks[k].updatedAt||0))weeks[k]=v;
   const config=(b.config.updatedAt||0)>(a.config.updatedAt||0)?b.config:a.config;
-  return normalize({config,entries:sortEntries([...map.values()])})}
+  return normalize({config,weeks,entries:sortEntries([...map.values()])})}
 
 /* ---------- calendar logic ---------- */
 const holidayMap=()=>Object.fromEntries(db.config.holidays.map(h=>[h.date,h.name]));
@@ -497,14 +561,15 @@ function renderStatus(){if(syncing||!KEY)return;
 
 /* ---------- UI shared ---------- */
 let curTab='log';
+const TABS=['log','week','dash','cal','settings'];
 function startApp(){closeLogin();$('#welcome').hidden=true;$('#app').hidden=false;document.title='Timesheet';
   fillSelects();fillForm({date:todayISO()});renderTimer();renderStatus();renderExpiry();
-  const h=location.hash.slice(1);switchTab(h==='login'?'log':h||'log');if(ghReady())sync()}
-function switchTab(t){if(!['log','dash','cal','settings'].includes(t))t='log';curTab=t;
+  const h=location.hash.slice(1);switchTab(h==='login'?'log':h||'log');if(ghReady())sync();setTimeout(checkUpdate,3000)}
+function switchTab(t){if(!TABS.includes(t))t='log';if(curTab==='week'&&t!=='week')saveNote();curTab=t;
   $$('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   $$('.tab').forEach(s=>s.classList.toggle('active',s.id==='tab-'+t));
   history.replaceState(null,'','#'+t);renderTab()}
-const renderTab=()=>({log:renderLog,dash:renderDash,cal:renderCal,settings:renderSettings})[curTab]();
+const renderTab=()=>({log:renderLog,week:renderWeek,dash:renderDash,cal:renderCal,settings:renderSettings})[curTab]();
 function rerender(){fillSelects();if(curTab!=='settings')renderTab();updateDaySum()}
 let toastT;
 function toast(msg,label,fn){const t=$('#toast');t.innerHTML=`<span>${esc(msg)}</span>${label?`<button>${esc(label)}</button>`:''}`;
@@ -545,6 +610,7 @@ function saveEntry(ev){ev.preventDefault();const f=F(),now=Date.now();
   fillSelects();resetForm(data.date);f.ticket.value='';f.hours.value='';f.desc.value='';f.hours.focus();
   renderLog();toast(wasEdit?'Entry updated':'Entry saved')}
 const match=(e,q)=>[e.type,e.task,e.ticket,e.desc,e.date].join(' ').toLowerCase().includes(q);
+function logFilter(){const q=$('#search').value.trim().toLowerCase();return {q,filtering:!!q||starOnly,filt:e=>(!q||match(e,q))&&(!starOnly||e.star)}}
 function entryRow(e){return `<div class="entry">${chip(e.type)}<div><div class="e-task">${e.star?'<span class="star-on">★</span> ':''}${esc(e.task||'—')}${e.ticket?`<span class="ticket">${esc(e.ticket)}</span>`:''}</div>${e.desc?`<div class="e-desc">${esc(e.desc)}</div>`:''}</div>
   <b class="e-h">${fmt(e.hours)}h</b><div class="e-act"><button title="${e.star?'Remove highlight':'Highlight'}" data-act="star" data-id="${e.id}">${e.star?'★':'☆'}</button><button title="Edit" data-act="edit" data-id="${e.id}">✎</button><button title="Copy to form (today)" data-act="dup" data-id="${e.id}">⧉</button><button title="Delete" data-act="del" data-id="${e.id}">🗑</button></div></div>`}
 function dayBlock(iso,list,H,L){const info=dayInfo(iso,H,L),tot=list.reduce((s,e)=>s+e.hours,0),tgt=db.config.dailyTarget;
@@ -553,8 +619,7 @@ function dayBlock(iso,list,H,L){const info=dayInfo(iso,H,L),tot=list.reduce((s,e
   <div class="spacer"></div><span class="tot ${cls}">${fmt(tot)}h</span><button class="btn ghost sm" data-act="add" data-date="${iso}">+ Add</button></div>
   ${list.length?list.sort((a,b)=>a.createdAt-b.createdAt).map(entryRow).join(''):'<div class="muted none">Nothing logged</div>'}</div>`}
 function renderLog(){
-  const q=$('#search').value.trim().toLowerCase(),H=holidayMap(),L=leaveMap(),t=todayISO(),tgt=db.config.dailyTarget;
-  const filt=e=>(!q||match(e,q))&&(!starOnly||e.star),filtering=!!q||starOnly;
+  const {q,filtering,filt}=logFilter(),H=holidayMap(),L=leaveMap(),t=todayISO(),tgt=db.config.dailyTarget;
   $('#starOnly').classList.toggle('on',starOnly);
   const byDate={};live().forEach(e=>(byDate[e.date]??=[]).push(e));
   let dates;
@@ -569,6 +634,41 @@ function renderLog(){
     const p=elapsed?hours/(elapsed*tgt):0;
     $('#monthSummary').innerHTML=kpi('Logged',fmt(hours)+'h')+kpi('Expected so far',fmt(elapsed*tgt)+'h')+kpi('Productivity',pct(p),pcls(p))+kpi('Working days',`${elapsed}/${working}`)+kpi('Days missing',missing,missing?'p-bad':'p-ok')}
   $('#dayList').innerHTML=dates.length?dates.map(iso=>dayBlock(iso,(byDate[iso]||[]).filter(e=>!filtering||filt(e)),H,L)).join(''):'<div class="empty card">Nothing here yet.</div>'}
+
+/* ---------- WEEK tab ---------- */
+let weekStart=null,noteT;
+function weekData(ws){const H=holidayMap(),L=leaveMap(),t=todayISO(),tgt=db.config.dailyTarget,days=[...Array(7)].map((_,i)=>addDays(ws,i)),end=days[6];
+  const list=live().filter(e=>e.date>=ws&&e.date<=end);let working=0,elapsed=0,missing=0;
+  const per=days.map(d=>{const info=dayInfo(d,H,L),h=list.filter(e=>e.date===d).reduce((s,e)=>s+e.hours,0);
+    if(info.kind==='work'){working++;if(d<=t)elapsed++;if(d<t&&!h)missing++}return {d,info,h}});
+  return {ws,end,list,per,working,elapsed,missing,tgt,hours:list.reduce((s,e)=>s+e.hours,0)}}
+const groupSum=(list,key)=>{const m={};list.forEach(e=>{const k=e[key]||'(none)';(m[k]??={h:0,n:0});m[k].h+=e.hours;m[k].n++});return Object.entries(m).sort((a,b)=>b[1].h-a[1].h)};
+const rangeLabel=(a,b)=>{const A=new Date(a+'T00:00:00Z'),B=new Date(b+'T00:00:00Z');return `${A.getUTCDate()} ${MONTHS[A.getUTCMonth()]} – ${B.getUTCDate()} ${MONTHS[B.getUTCMonth()]} ${B.getUTCFullYear()}`};
+function renderWeek(){weekStart??=mondayOf(todayISO());const t=todayISO(),W=weekData(weekStart),P=weekData(addDays(weekStart,-7));
+  $('#weekLabel').textContent=rangeLabel(W.ws,W.end)+(weekStart===mondayOf(t)?' · this week':'');
+  const prod=W.elapsed?W.hours/(W.elapsed*W.tgt):0,delta=W.hours-P.hours,stars=W.list.filter(e=>e.star);
+  $('#weekKpis').innerHTML=kpi('Logged',fmt(W.hours)+'h')+kpi('Week target',fmt(W.working*W.tgt)+'h')+kpi('Productivity so far',W.elapsed?pct(prod):'—',W.elapsed?pcls(prod):'')
+    +kpi('Days missing',W.missing,W.missing?'p-bad':'p-ok')+kpi('vs last week',(delta>=0?'+':'')+fmt(delta)+'h',delta>=0?'p-ok':'p-warn')+kpi('Highlights',stars.length);
+  const max=Math.max(W.tgt,...W.per.map(p=>p.h))*1.1;
+  $('#weekDays').innerHTML=W.per.map(p=>{const d=new Date(p.d+'T00:00:00Z');let c=p.info.kind;
+    if(p.info.kind==='work'&&p.d<t)c+=!p.h?' missing':p.h<W.tgt?' short':'';if(p.d===t)c+=' today';
+    return `<button class="wk-day ${c}" data-date="${p.d}" title="Open ${p.d} in Log"><span class="muted">${DAYS[d.getUTCDay()]} ${d.getUTCDate()}</span><b>${p.h?fmt(p.h)+'h':'—'}</b>
+      <div class="bar-wrap"><div class="tline" style="bottom:${W.tgt/max*100}%"></div><div class="fill" style="height:${p.h/max*100}%"></div></div><small>${p.info.kind==='work'?'':esc(p.info.label)}</small></button>`}).join('');
+  const hb=(label,h)=>`<div class="hbar"><div>${label}</div><div class="track"><i style="width:${W.hours?h/W.hours*100:0}%"></i></div><div class="num">${fmt(h)}h · ${W.hours?Math.round(h/W.hours*100):0}%</div></div>`;
+  $('#weekTypes').innerHTML=W.list.length?groupSum(W.list,'type').map(([k,v])=>hb(chip(k),v.h)).join(''):'<p class="muted">Nothing logged this week.</p>';
+  $('#weekTasks').innerHTML=W.list.length?groupSum(W.list,'task').map(([k,v])=>hb(`${esc(k)} <span class="muted">(${v.n})</span>`,v.h)).join(''):'<p class="muted">—</p>';
+  const tk=groupSum(W.list.filter(e=>e.ticket),'ticket');
+  $('#weekTickets').innerHTML=tk.length?tk.map(([k,v])=>`<span class="ticket" style="font-size:12px;padding:2px 8px;margin:0">${esc(k)} · ${fmt(v.h)}h</span>`).join(''):'<p class="muted" style="margin:0">No tickets this week.</p>';
+  $('#weekStars').innerHTML=stars.length?stars.map(e=>`<div class="hl-item"><span class="muted">${DAYS[dow(e.date)]} ${+e.date.slice(8)}</span> · <b>${esc(e.task||'—')}</b>${e.desc?` — ${esc(e.desc)}`:''}</div>`).join('')
+    :'<p class="muted">No highlights yet. Star an entry in the Log to add one.</p>';
+  const note=$('#weekNote');if(document.activeElement!==note){note.value=db.weeks[weekStart]?.note||'';$('#noteState').textContent=''}}
+function saveNote(){clearTimeout(noteT);if(!weekStart||!KEY)return;const v=$('#weekNote').value,cur=db.weeks[weekStart]?.note||'';if(v===cur)return;
+  db.weeks[weekStart]={note:v,updatedAt:Date.now()};persist();$('#noteState').textContent='· saved'}
+function weekSummary(){const W=weekData(weekStart),n=(db.weeks[weekStart]?.note||'').trim(),s=W.list.filter(e=>e.star);
+  const L=[`Week ${rangeLabel(W.ws,W.end)}`,`Logged ${fmt(W.hours)}h of ${fmt(W.working*W.tgt)}h target`,'','By type:',...groupSum(W.list,'type').map(([k,v])=>`- ${k}: ${fmt(v.h)}h`),
+    '','By task:',...groupSum(W.list,'task').map(([k,v])=>`- ${k}: ${fmt(v.h)}h`)];
+  if(s.length)L.push('','Highlights:',...s.map(e=>`- ${DAYS[dow(e.date)]} ${e.date}: ${e.task}${e.desc?' — '+e.desc:''}`));
+  if(n)L.push('','Notes:',n);return L.join('\n')}
 
 /* ---------- timer ---------- */
 let timer=JSON.parse(localStorage.getItem(K.timer)||'null');
@@ -619,19 +719,25 @@ function renderCal(){const {y,m}=calMonth,H=holidayMap(),L=leaveMap(),t=todayISO
     html+=`<button class="cell ${c}" data-date="${iso}" style="--f:${i.kind==='work'?Math.min(h/tgt,1.2):0}"><span class="dn">${d}</span>${h?`<b>${fmt(h)}h</b>`:''}<small>${i.kind==='holiday'||i.kind==='leave'?esc(i.label):''}</small></button>`}
   $('#calGrid').innerHTML=html;$('#holList').innerHTML=hlList(db.config.holidays,'holidays');$('#leaveList').innerHTML=hlList(db.config.leaves,'leaves')}
 
-/* ---------- SETTINGS ---------- */
+/* ---------- SETTINGS & export ---------- */
 function renderSettings(){const c=db.config,f=$('#cfgForm');f.dailyTarget.value=c.dailyTarget;f.taskTypes.value=c.taskTypes.join('\n');f.taskNames.value=c.taskNames.join('\n');
   $('#wkDays').innerHTML=DAYS.map((d,i)=>`<label><input type="checkbox" value="${i}" ${c.weekend.includes(i)?'checked':''}>${d}</label>`).join('');
   const g=$('#ghForm');g.owner.value=gh.owner||'';g.repo.value=gh.repo||'';g.branch.value=gh.branch||'main';g.path.value=gh.path||'data/timesheet.json';
   g.token.value='';g.token.placeholder=gh.token?'•••••• saved (leave blank to keep)':'github_pat_…';g.auto.checked=gh.auto!==false;g.expires.value=gh.tokenExpires||'';
   const d=expiryDays();
   $('#expInfo').innerHTML=d===null?'Add the expiry date shown on GitHub so the app can remind you a week before.':d<=0?`<span class="p-bad">Expired on ${niceDate(gh.tokenExpires)}</span>`:`Expires ${niceDate(gh.tokenExpires)} · <span class="${d<=7?'p-warn':'p-ok'}">${d} day${d===1?'':'s'} left</span>`;
-  $('#dataInfo').textContent=`${live().length} entries · ${live().filter(e=>e.star).length} highlights · ${c.holidays.length} holidays · ${c.leaves.length} leave days`}
+  const cm=todayISO().slice(0,7);if(!$('#csvFrom').value)$('#csvFrom').value=cm;if(!$('#csvTo').value)$('#csvTo').value=cm;
+  $('#verInfo').textContent=`App version ${APP_VERSION}`;
+  $('#dataInfo').textContent=`${live().length} entries · ${live().filter(e=>e.star).length} highlights · ${Object.keys(db.weeks).length} weekly notes · ${c.holidays.length} holidays · ${c.leaves.length} leave days`}
 function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-function toCSV(){const H=holidayMap(),L=leaveMap(),q=v=>{v=String(v??'');return /[",\n\r]/.test(v)?`"${v.replace(/"/g,'""')}"`:v};
+function toCSV(list){const H=holidayMap(),L=leaveMap(),q=v=>{v=String(v??'');return /[",\n\r]/.test(v)?`"${v.replace(/"/g,'""')}"`:v};
   const rows=[['Date','Day','Task Type','Task Name','Ticket #','Time (Hrs)','Description','Day Type','Highlight']];
-  sortEntries(live()).forEach(e=>rows.push([e.date,DAYS[dow(e.date)],e.type,e.task,e.ticket,e.hours,e.desc,dayInfo(e.date,H,L).label,e.star?'Yes':'']));
+  const sorted=sortEntries([...list]);sorted.forEach(e=>rows.push([e.date,DAYS[dow(e.date)],e.type,e.task,e.ticket,e.hours,e.desc,dayInfo(e.date,H,L).label,e.star?'Yes':'']));
+  rows.push([],['Total','','','','',fmt(sorted.reduce((s,e)=>s+e.hours,0)),`${new Set(sorted.map(e=>e.date)).size} days`,'','']);
   return '\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n')}
+function exportCSV(list,name){if(!list.length)return toast('No entries to export for that period');download(name,toCSV(list),'text/csv');toast(`Exported ${list.length} entries`)}
+function exportRange(from,to){if(!from)return toast('Pick a month first');if(!to||to<from)to=from;
+  exportCSV(live().filter(e=>{const m=e.date.slice(0,7);return m>=from&&m<=to}),`timesheet-${from}${to!==from?'_to_'+to:''}.csv`)}
 function toISO(v){if(v==null||v==='')return null;
   if(typeof v==='number')return new Date(Math.round((v-25569)*864e5)).toISOString().slice(0,10);
   if(v instanceof Date)return `${v.getFullYear()}-${pad(v.getMonth()+1)}-${pad(v.getDate())}`;
@@ -680,6 +786,8 @@ $('#setupForm').onsubmit=async ev=>{ev.preventDefault();const f=ev.target,err=$(
 $('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)switchTab(b.dataset.tab)};
 $('#syncBtn').onclick=()=>sync(true);
 $('#installBtn').onclick=async()=>{if(!installEvt)return;installEvt.prompt();await installEvt.userChoice;installEvt=null;$('#installBtn').hidden=true};
+$('#updateReload').onclick=reloadApp;
+$('#checkUpd').onclick=()=>checkUpdate(true);
 $('#themeBtn').onclick=()=>{const t=document.documentElement.dataset.theme==='dark'?'light':'dark';localStorage.setItem(K.theme,t);applyTheme(t)};
 $('#lockBtn').onclick=()=>signOut(false);
 $('#signOutBtn').onclick=()=>signOut(false);
@@ -697,6 +805,9 @@ $('#prevM').onclick=()=>{logMonth=shiftM(logMonth,-1);renderLog()};
 $('#nextM').onclick=()=>{logMonth=shiftM(logMonth,1);renderLog()};
 $('#thisM').onclick=()=>{logMonth=nowMonth();starOnly=false;$('#search').value='';renderLog()};
 $('#starOnly').onclick=()=>{starOnly=!starOnly;renderLog()};
+$('#logCsv').onclick=()=>{const {filtering,filt}=logFilter();
+  if(filtering)return exportCSV(live().filter(filt),`timesheet-${starOnly&&!$('#search').value.trim()?'highlights':'results'}-${todayISO()}.csv`);
+  const m=`${logMonth.y}-${pad(logMonth.m+1)}`;exportRange(m,m)};
 $('#search').oninput=renderLog;
 document.addEventListener('keydown',e=>{if(KEY&&e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();switchTab('log');$('#search').focus()}});
 $('#dayList').onclick=ev=>{const b=ev.target.closest('[data-act]');if(!b)return;const e=db.entries.find(x=>x.id===b.dataset.id);
@@ -706,6 +817,15 @@ $('#dayList').onclick=ev=>{const b=ev.target.closest('[data-act]');if(!b)return;
   else if(b.dataset.act==='star'){e.star=!e.star;e.updatedAt=Date.now();persist();renderLog()}
   else if(b.dataset.act==='del'){e.deleted=true;e.updatedAt=Date.now();persist();renderLog();updateDaySum();
     toast('Entry deleted','Undo',()=>{e.deleted=false;e.updatedAt=Date.now();persist();renderLog();updateDaySum()})}};
+$('#prevW').onclick=()=>{saveNote();weekStart=addDays(weekStart,-7);renderWeek()};
+$('#nextW').onclick=()=>{saveNote();weekStart=addDays(weekStart,7);renderWeek()};
+$('#thisW').onclick=()=>{saveNote();weekStart=mondayOf(todayISO());renderWeek()};
+$('#weekDays').onclick=e=>{const c=e.target.closest('.wk-day');if(!c)return;const d=c.dataset.date;
+  logMonth={y:+d.slice(0,4),m:+d.slice(5,7)-1};starOnly=false;$('#search').value='';switchTab('log');resetForm(d);F().hours.focus()};
+$('#weekNote').oninput=()=>{$('#noteState').textContent='· typing…';clearTimeout(noteT);noteT=setTimeout(saveNote,900)};
+$('#weekNote').onblur=saveNote;
+$('#weekCopy').onclick=async()=>{saveNote();const s=weekSummary();try{await navigator.clipboard.writeText(s);toast('Week summary copied')}catch{prompt('Copy your summary:',s)}};
+$('#weekCsv').onclick=()=>{const W=weekData(weekStart);exportCSV(W.list,`timesheet-week-${weekStart}.csv`)};
 $('#prevY').onclick=()=>{dashYear--;renderDash()};$('#nextY').onclick=()=>{dashYear++;renderDash()};
 $('#unitSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;unit=b.dataset.u;$$('#unitSeg button').forEach(x=>x.classList.toggle('on',x===b));renderDash()};
 $('#prevC').onclick=()=>{calMonth=shiftM(calMonth,-1);renderCal()};$('#nextC').onclick=()=>{calMonth=shiftM(calMonth,1);renderCal()};
@@ -736,14 +856,16 @@ $('#passForm').onsubmit=async ev=>{ev.preventDefault();const f=ev.target;
 $('#copyVault').onclick=async()=>{const s=JSON.stringify(vault);
   try{await navigator.clipboard.writeText(s);toast('Copied. Paste it between the quotes of PORTABLE_VAULT in index.html')}catch{prompt('Copy this key:',s)}};
 $('#iconsBtn').onclick=downloadIcons;
+$('#expRange').onclick=()=>exportRange($('#csvFrom').value,$('#csvTo').value);
 $('#xlsxIn').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{await importXlsx(file)}catch(err){toast(err.message)}};
 $('#jsonIn').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;
   try{db=merge(db,normalize(JSON.parse(await file.text())));persist();rerender();renderSettings();toast('JSON merged')}catch{toast('Invalid JSON file')}};
 $('#expJson').onclick=()=>download(`timesheet-${todayISO()}.json`,serialize(db),'application/json');
-$('#expCsv').onclick=()=>download(`timesheet-${todayISO()}.csv`,toCSV(),'text/csv');
-window.addEventListener('focus',()=>{if(KEY&&ghReady()&&!syncing&&Date.now()-meta.lastSync>60000)sync()});
+$('#expCsv').onclick=()=>exportCSV(live(),`timesheet-all-${todayISO()}.csv`);
+window.addEventListener('focus',()=>{if(!KEY)return;if(ghReady()&&!syncing&&Date.now()-meta.lastSync>60000)sync();if(Date.now()-lastUpdCheck>15*60000)checkUpdate()});
 window.addEventListener('online',()=>{if(KEY){renderStatus();if(ghReady())sync()}});
 window.addEventListener('offline',renderStatus);
+window.addEventListener('pagehide',saveNote);
 setInterval(()=>{renderStatus();if(KEY)renderExpiry()},60000);
 
 boot();
