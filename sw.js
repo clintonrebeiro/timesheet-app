@@ -1,4 +1,4 @@
-const CACHE = 'timesheet-v1';
+const CACHE = 'timesheet-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -14,10 +14,9 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  // Never touch GitHub API calls, the CDN, or non-GET requests
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
 
-  // The app page: always try the network first (so updates arrive), fall back to cache offline
+  // App page: network first (fresh code), cached copy when offline
   if (e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' })
@@ -26,6 +25,9 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
+
+  // Version checks and other requests with ?query go straight to the network
+  if (url.search) return;
 
   // Icons & manifest: cache first
   e.respondWith(
