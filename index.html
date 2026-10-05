@@ -4,16 +4,32 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#4f46e5">
-<title>Timesheet</title>
+<meta name="robots" content="noindex">
+<title>Welcome</title>
 <style>
 :root{--bg:#f5f6fa;--card:#fff;--text:#1c2230;--muted:#6b7385;--line:#e5e7ef;--accent:#4f46e5;--accent-soft:#eef0ff;--ok:#15803d;--ok-soft:#dcfce7;--warn:#b45309;--warn-soft:#fef3c7;--bad:#b91c1c;--bad-soft:#fee2e2;--hol:#0e7490;--hol-soft:#cffafe;--leave:#7c3aed;--leave-soft:#ede9fe;--r:12px;--sh:0 1px 3px rgba(16,24,40,.07)}
 [data-theme=dark]{--bg:#0e1120;--card:#161a2c;--text:#e7e9f3;--muted:#8f96ad;--line:#262b45;--accent:#8b93ff;--accent-soft:#232853;--ok:#4ade80;--ok-soft:#14321f;--warn:#fbbf24;--warn-soft:#3a2c0b;--bad:#f87171;--bad-soft:#3b1515;--hol:#22d3ee;--hol-soft:#0c3440;--leave:#c4b5fd;--leave-soft:#2a2150;--sh:none}
 *{box-sizing:border-box}html,body{margin:0}
 body{font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
 h2,h3{margin:0 0 12px;font-size:15px;font-weight:650}
+code{font-family:ui-monospace,monospace;font-size:12px;background:var(--bg);padding:1px 5px;border-radius:4px}
+/* welcome + auth */
+.welcome{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(900px 500px at 15% -10%,var(--accent-soft),transparent),var(--bg)}
+.welcome[hidden]{display:none}
+.w-card{text-align:center;max-width:460px}
+.w-card h1{font-size:34px;margin:18px 0 8px}
+.w-card p{font-size:16px;color:var(--muted);margin:6px 0}
+.w-signin{position:fixed;bottom:14px;right:18px;border:0;background:none;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;opacity:.55}
+.w-signin:hover{opacity:1;text-decoration:underline}
+.modal{position:fixed;inset:0;background:rgba(10,12,24,.55);display:grid;place-items:center;z-index:40;padding:16px}
+.modal[hidden]{display:none}
+.m-card{width:100%;max-width:440px;margin:0}
+.err{color:var(--bad);font-size:13px;min-height:18px;margin-bottom:6px}
+/* app */
 header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:10px;padding:10px 20px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px}
 .logo{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff}
+.logo.big{width:64px;height:64px;font-size:30px;border-radius:16px;margin:0 auto}
 nav{display:flex;gap:2px;background:var(--bg);padding:3px;border-radius:10px}
 nav button{border:0;background:none;color:var(--muted);padding:6px 14px;border-radius:8px;font:inherit;cursor:pointer}
 nav button.active{background:var(--card);color:var(--text);box-shadow:var(--sh);font-weight:600}
@@ -22,9 +38,11 @@ main{max-width:1300px;margin:0 auto;padding:18px}
 .tab{display:none}.tab.active{display:block}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:14px}
 .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);color:var(--text);padding:7px 12px;border-radius:8px;font:inherit;cursor:pointer;white-space:nowrap}
-.btn:hover{border-color:var(--accent)}
+.btn:hover{border-color:var(--accent)}.btn:disabled{opacity:.6;cursor:wait}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.ghost{background:transparent}.btn.sm{padding:3px 9px;font-size:12px}.btn.danger{color:var(--bad)}
+.btn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+#timerBtn.running{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
 input,select,textarea{width:100%;font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;outline:none}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 textarea{resize:vertical}
@@ -32,15 +50,20 @@ textarea{resize:vertical}
 .form label>input,.form label>select,.form label>textarea{margin-top:4px}
 .form label.check{display:flex;gap:8px;align-items:center;color:var(--text);font-size:14px}
 .form label.check input{width:auto;margin:0}
+.form-h{display:flex;align-items:center;gap:8px;margin-bottom:10px}.form-h h2{margin:0}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 kbd{font-size:10px;opacity:.75;border:1px solid rgba(255,255,255,.45);border-radius:4px;padding:0 4px}
 .muted{color:var(--muted)}
-.log-grid{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+.quick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.q-label{width:100%;font-size:12px;color:var(--muted)}
+.q{border:1px solid var(--line);background:hsl(var(--h) 85% 96%);color:hsl(var(--h) 55% 30%);border-radius:99px;padding:3px 10px;font:inherit;font-size:12px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-theme=dark] .q{background:hsl(var(--h) 30% 18%);color:hsl(var(--h) 80% 82%)}
+.log-grid{display:grid;grid-template-columns:350px 1fr;gap:16px;align-items:start}
 .log-grid>form{position:sticky;top:70px}
 .toolbar{display:flex;align-items:center;gap:8px;padding:10px 12px;flex-wrap:wrap}
 .toolbar b{min-width:130px;text-align:center}
-.toolbar input[type=search]{max-width:260px}
+.toolbar input[type=search]{max-width:240px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;box-shadow:var(--sh)}
 .kpi span{display:block;font-size:12px;color:var(--muted)}
@@ -56,6 +79,7 @@ kbd{font-size:10px;opacity:.75;border:1px solid rgba(255,255,255,.45);border-rad
 .chip{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:6px;background:hsl(var(--h) 85% 93%);color:hsl(var(--h) 60% 30%);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 [data-theme=dark] .chip{background:hsl(var(--h) 35% 22%);color:hsl(var(--h) 85% 80%)}
 .e-task{font-weight:600}
+.star-on{color:#f59e0b}
 .ticket{font-size:11px;font-family:ui-monospace,monospace;background:var(--bg);border:1px solid var(--line);padding:0 6px;border-radius:4px;margin-left:4px;font-weight:500}
 .e-desc{color:var(--muted);font-size:13px;white-space:pre-wrap}
 .e-h{font-variant-numeric:tabular-nums}
@@ -66,6 +90,7 @@ kbd{font-size:10px;opacity:.75;border:1px solid rgba(255,255,255,.45);border-rad
 .day-sum{font-size:12px;color:var(--muted);margin:-2px 0 10px}
 .pill{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--bg);color:var(--muted)}
 .pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.dirty{background:var(--warn-soft);color:var(--warn)}.pill.err{background:var(--bad-soft);color:var(--bad)}.pill.busy{background:var(--accent-soft);color:var(--accent)}
+.pill.timer{background:var(--bad-soft);color:var(--bad);font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .seg{display:flex;background:var(--bg);border-radius:8px;padding:3px}
 .seg button{border:0;background:none;padding:4px 12px;border-radius:6px;cursor:pointer;color:var(--muted);font:inherit}
 .seg button.on{background:var(--card);color:var(--text);box-shadow:var(--sh)}
@@ -114,6 +139,43 @@ tbody tr:hover{background:var(--bg)}
 </style>
 </head>
 <body>
+
+<!-- PUBLIC WELCOME -->
+<div id="welcome" class="welcome" hidden>
+  <div class="w-card">
+    <div class="logo big">☀</div>
+    <h1>Welcome</h1>
+    <p>Thanks for stopping by.</p>
+    <p>This is a small personal space — there's nothing public to see here.</p>
+    <p style="margin-top:18px">Have a wonderful day! 👋</p>
+  </div>
+  <button class="w-signin" id="openLogin">Owner sign in</button>
+</div>
+
+<!-- AUTH MODAL -->
+<div id="authModal" class="modal" hidden>
+  <form id="loginForm" class="card form m-card" hidden>
+    <h2>Sign in</h2>
+    <label>Passphrase<input type="password" name="pass" autocomplete="current-password" required></label>
+    <label class="check"><input type="checkbox" name="remember"> Keep me signed in on this device</label>
+    <div class="err" id="loginErr"></div>
+    <div class="actions"><button class="btn primary">Unlock</button><button type="button" class="btn ghost" data-close>Cancel</button></div>
+  </form>
+  <form id="setupForm" class="card form m-card" hidden autocomplete="off">
+    <h2>Set up this device</h2>
+    <p class="muted" style="margin-top:-6px">Your GitHub token is stored encrypted with your passphrase.</p>
+    <div class="row2"><label>GitHub owner<input name="owner" required></label><label>Data repo<input name="repo" required></label></div>
+    <div class="row2"><label>Branch<input name="branch" value="main"></label><label>File path<input name="path" value="data/timesheet.json"></label></div>
+    <label>Fine-grained token<input name="token" type="password" required></label>
+    <div class="row2"><label>Choose passphrase<input name="pass" type="password" autocomplete="new-password" required></label><label>Confirm<input name="pass2" type="password" autocomplete="new-password" required></label></div>
+    <label class="check"><input type="checkbox" name="remember"> Keep me signed in on this device</label>
+    <div class="err" id="setupErr"></div>
+    <div class="actions"><button class="btn primary">Create &amp; sign in</button><button type="button" class="btn ghost" data-close>Cancel</button></div>
+  </form>
+</div>
+
+<!-- APP -->
+<div id="app" hidden>
 <header>
   <div class="brand"><span class="logo">⏱</span>Timesheet</div>
   <nav id="tabs">
@@ -123,26 +185,29 @@ tbody tr:hover{background:var(--bg)}
     <button data-tab="settings">Settings</button>
   </nav>
   <div class="spacer"></div>
+  <span id="timerPill" class="pill timer" hidden title="Go to timer"></span>
   <span id="status" class="pill">Local only</span>
   <button id="syncBtn" class="btn ghost" title="Sync with GitHub">⟳ Sync</button>
   <button id="themeBtn" class="btn ghost" title="Toggle theme">◐</button>
+  <button id="lockBtn" class="btn ghost" title="Sign out">🔒</button>
 </header>
 
 <main>
-<!-- LOG -->
 <section id="tab-log" class="tab active">
   <div class="log-grid">
     <form id="entryForm" class="card form" autocomplete="off">
-      <h2 id="formTitle">New entry</h2>
+      <div class="form-h"><h2 id="formTitle">New entry</h2><div class="spacer"></div><button type="button" class="btn sm" id="timerBtn">▶ Start timer</button></div>
+      <div id="quick" class="quick"></div>
       <label>Date<input type="date" name="date" required></label>
       <div class="row2">
         <label>Task type<select name="type"></select></label>
-        <label>Hours<input type="number" name="hours" step="0.05" min="0" max="24" required></label>
+        <label>Hours<input type="number" name="hours" step="0.05" min="0" max="24"></label>
       </div>
       <label>Task name<input name="task" list="taskList" placeholder="Pick or type a new one"></label>
       <datalist id="taskList"></datalist>
       <label>Ticket #<input name="ticket" placeholder="e.g. REQ86095"></label>
       <label>Description<textarea name="desc" rows="4"></textarea></label>
+      <label class="check"><input type="checkbox" name="star"> ★ Highlight (a win worth remembering)</label>
       <div class="day-sum" id="daySum"></div>
       <div class="actions">
         <button class="btn primary" type="submit">Save <kbd>Ctrl+↵</kbd></button>
@@ -153,6 +218,7 @@ tbody tr:hover{background:var(--bg)}
       <div class="toolbar card">
         <button class="btn ghost" id="prevM">‹</button><b id="monthLabel"></b><button class="btn ghost" id="nextM">›</button>
         <button class="btn ghost sm" id="thisM">This month</button>
+        <button class="btn ghost sm" id="starOnly">★ Highlights</button>
         <div class="spacer"></div>
         <input id="search" type="search" placeholder="Search all entries…  ( / )">
       </div>
@@ -162,7 +228,6 @@ tbody tr:hover{background:var(--bg)}
   </div>
 </section>
 
-<!-- DASHBOARD -->
 <section id="tab-dash" class="tab">
   <div class="toolbar card">
     <button class="btn ghost" id="prevY">‹</button><b id="yearLabel"></b><button class="btn ghost" id="nextY">›</button>
@@ -177,7 +242,6 @@ tbody tr:hover{background:var(--bg)}
   <div class="card"><h3>By task</h3><div class="tbl-wrap" id="taskTbl"></div></div>
 </section>
 
-<!-- CALENDAR -->
 <section id="tab-cal" class="tab">
   <div class="toolbar card">
     <button class="btn ghost" id="prevC">‹</button><b id="calLabel"></b><button class="btn ghost" id="nextC">›</button>
@@ -197,7 +261,6 @@ tbody tr:hover{background:var(--bg)}
   </div>
 </section>
 
-<!-- SETTINGS -->
 <section id="tab-settings" class="tab">
   <div class="grid2">
     <form id="cfgForm" class="card form">
@@ -211,13 +274,24 @@ tbody tr:hover{background:var(--bg)}
     <div>
       <form id="ghForm" class="card form" autocomplete="off">
         <h3>GitHub sync</h3>
-        <p class="muted" style="margin-top:-6px">Saves locally first, then merges with a JSON file in your repo.</p>
-        <div class="row2"><label>Owner<input name="owner" placeholder="your-username"></label><label>Repo<input name="repo" placeholder="timesheet-data"></label></div>
+        <div class="row2"><label>Owner<input name="owner"></label><label>Repo<input name="repo"></label></div>
         <div class="row2"><label>Branch<input name="branch"></label><label>File path<input name="path"></label></div>
-        <label>Fine-grained token (Contents: read & write)<input name="token" type="password"></label>
+        <label>Token<input name="token" type="password"></label>
         <label class="check"><input type="checkbox" name="auto"> Auto-sync after every change</label>
-        <div class="actions"><button class="btn primary">Save &amp; sync</button><button type="button" class="btn ghost" id="forgetGh">Forget token</button></div>
+        <div class="actions"><button class="btn primary">Save &amp; sync</button></div>
       </form>
+      <div class="card form">
+        <h3>Security</h3>
+        <p class="muted" style="margin-top:-6px">Your token and this device's copy of your data are encrypted with your passphrase.</p>
+        <form id="passForm">
+          <div class="row2"><label>New passphrase<input type="password" name="p1" autocomplete="new-password"></label><label>Confirm<input type="password" name="p2" autocomplete="new-password"></label></div>
+          <button class="btn">Change passphrase</button>
+        </form>
+        <h3 style="margin-top:18px">Sign in anywhere with only your passphrase</h3>
+        <p class="muted">Copy the portable login key and paste it between the quotes on the <code>PORTABLE_VAULT</code> line at the top of the script in <code>index.html</code>. It holds your token encrypted with your passphrase, so use a strong passphrase (12+ characters).</p>
+        <div class="actions"><button type="button" class="btn" id="copyVault">Copy portable login key</button></div>
+        <div class="actions" style="margin-top:16px"><button type="button" class="btn" id="signOutBtn">Sign out</button><button type="button" class="btn danger" id="wipeBtn">Sign out &amp; forget this device</button></div>
+      </div>
       <div class="card form">
         <h3>Data</h3>
         <p class="muted" id="dataInfo" style="margin-top:-6px"></p>
@@ -227,18 +301,21 @@ tbody tr:hover{background:var(--bg)}
           <button type="button" class="btn" id="expJson">⬇ Export JSON</button>
           <button type="button" class="btn" id="expCsv">⬇ Export CSV</button>
         </div>
-        <div class="actions" style="margin-top:14px"><button type="button" class="btn danger" id="clearLocal">Clear local data on this device</button></div>
       </div>
     </div>
   </div>
 </section>
 </main>
+</div>
 <div id="toast" class="toast"></div>
 
 <script>
+/* Paste your portable login key between the quotes (Settings → Security). Leave empty to disable. */
+const PORTABLE_VAULT = '';
+
 /* ---------- constants & helpers ---------- */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const K={data:'ts.data.v1',gh:'ts.gh.v1',meta:'ts.meta.v1',theme:'ts.theme'};
+const K={data:'ts.data.v1',gh:'ts.gh.v1',meta:'ts.meta.v1',theme:'ts.theme',vault:'ts.vault.v1',key:'ts.key.v1',timer:'ts.timer.v1'};
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -259,27 +336,66 @@ const pct=p=>Math.round(p*100)+'%';
 const pcls=p=>p>=1?'p-ok':p>=.85?'p-warn':'p-bad';
 const shiftM=(o,d)=>{let m=o.m+d,y=o.y;while(m<0){m+=12;y--}while(m>11){m-=12;y++}return {y,m}};
 const nowMonth=()=>{const t=new Date();return {y:t.getFullYear(),m:t.getMonth()}};
+const u8b64=u=>{let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)};
+const b64u8=s=>Uint8Array.from(atob(s.replace(/\s/g,'')),c=>c.charCodeAt(0));
+const b64enc=s=>u8b64(new TextEncoder().encode(s));
+const b64dec=s=>new TextDecoder().decode(b64u8(s));
+
+/* ---------- crypto / auth ---------- */
+const ITER=600000;
+let KEY=null,vault=null;
+async function deriveKey(pass,salt){const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:ITER,hash:'SHA-256'},base,{name:'AES-GCM',length:256},true,['encrypt','decrypt'])}
+async function encStr(key,str){const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(str)));return u8b64(iv)+'.'+u8b64(ct)}
+async function decStr(key,s){const [iv,ct]=s.split('.');return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:b64u8(iv)},key,b64u8(ct)))}
+function getVault(){try{const l=localStorage.getItem(K.vault);if(l)return JSON.parse(l);return PORTABLE_VAULT?JSON.parse(PORTABLE_VAULT):null}catch{return null}}
+async function writeVault(){vault={v:1,salt:vault.salt,gh:await encStr(KEY,JSON.stringify(gh))};localStorage.setItem(K.vault,JSON.stringify(vault))}
+async function rememberKey(remember){const raw=u8b64(new Uint8Array(await crypto.subtle.exportKey('raw',KEY)));(remember?localStorage:sessionStorage).setItem(K.key,raw)}
+async function unlockWith(key,v){
+  gh={branch:'main',path:'data/timesheet.json',auto:true,...JSON.parse(await decStr(key,v.gh))};
+  KEY=key;vault=v;localStorage.setItem(K.vault,JSON.stringify(v));await loadData();startApp()}
+async function loadData(){const raw=localStorage.getItem(K.data);let d=null;
+  if(raw){try{d=raw.trim().startsWith('{')?JSON.parse(raw):JSON.parse(await decStr(KEY,raw))}catch{d=null}}
+  db=normalize(d);saveLocal()}
+function busy(f,on){const b=f.querySelector('button.primary');b.disabled=on;b.textContent=on?'Working…':(f.id==='loginForm'?'Unlock':'Create & sign in')}
+function showWelcome(){$('#app').hidden=true;$('#welcome').hidden=false;document.title='Welcome';if(location.hash==='#login')openLogin()}
+function openLogin(){const v=getVault();$('#authModal').hidden=false;$('#loginForm').hidden=!v;$('#setupForm').hidden=!!v;
+  if(v)$('#loginForm').pass.focus();
+  else{const old=JSON.parse(localStorage.getItem(K.gh)||'{}'),f=$('#setupForm');['owner','repo','branch','path','token'].forEach(k=>{if(old[k])f[k].value=old[k]});(f.owner.value?f.pass:f.owner).focus()}}
+function closeLogin(){$('#authModal').hidden=true;$('#loginErr').textContent='';$('#setupErr').textContent='';if(location.hash==='#login')history.replaceState(null,'',location.pathname)}
+async function signOut(wipe){
+  if(wipe&&!confirm('Sign out and remove your saved login and all local timesheet data from this device?\n\nData already synced to GitHub stays safe.'))return;
+  if(meta.dirty&&ghReady())await sync();
+  await saveChain;
+  sessionStorage.removeItem(K.key);localStorage.removeItem(K.key);
+  if(wipe)[K.data,K.meta,K.vault,K.gh,K.timer].forEach(k=>localStorage.removeItem(k));
+  location.href=location.pathname}
+async function boot(){applyTheme();const v=getVault(),raw=sessionStorage.getItem(K.key)||localStorage.getItem(K.key);
+  if(v&&raw){try{const key=await crypto.subtle.importKey('raw',b64u8(raw),'AES-GCM',true,['encrypt','decrypt']);await unlockWith(key,v);return}
+    catch{sessionStorage.removeItem(K.key);localStorage.removeItem(K.key)}}
+  showWelcome()}
 
 /* ---------- state ---------- */
-const canonE=x=>({id:x.id,date:x.date,type:x.type||'',task:x.task||'',ticket:x.ticket||'',hours:+x.hours||0,desc:x.desc||'',createdAt:x.createdAt||0,updatedAt:x.updatedAt||0,deleted:!!x.deleted});
+const canonE=x=>({id:x.id,date:x.date,type:x.type||'',task:x.task||'',ticket:x.ticket||'',hours:+x.hours||0,desc:x.desc||'',star:!!x.star,createdAt:x.createdAt||0,updatedAt:x.updatedAt||0,deleted:!!x.deleted});
 const canonC=c=>({taskTypes:c.taskTypes,taskNames:c.taskNames,holidays:c.holidays,leaves:c.leaves,dailyTarget:+c.dailyTarget||8,weekend:c.weekend,updatedAt:c.updatedAt||0});
 function normalize(d){d=d||{};return {version:1,config:canonC({...structuredClone(DEFAULT_CONFIG),...(d.config||{})}),entries:(Array.isArray(d.entries)?d.entries:[]).filter(e=>e&&e.id&&e.date).map(canonE)}}
-let db=normalize(JSON.parse(localStorage.getItem(K.data)||'null'));
+let db=normalize(null);
 let meta={dirty:false,lastSync:0,...JSON.parse(localStorage.getItem(K.meta)||'{}')};
-let gh={branch:'main',path:'data/timesheet.json',auto:true,...JSON.parse(localStorage.getItem(K.gh)||'{}')};
+let gh={};
 const live=()=>db.entries.filter(e=>!e.deleted);
-const saveLocal=()=>localStorage.setItem(K.data,JSON.stringify(db));
+let saveChain=Promise.resolve();
+function saveLocal(){if(!KEY)return;const snap=JSON.stringify(db),key=KEY;
+  saveChain=saveChain.then(async()=>localStorage.setItem(K.data,await encStr(key,snap))).catch(console.error)}
 const saveMeta=()=>localStorage.setItem(K.meta,JSON.stringify(meta));
 function persist(){saveLocal();meta.dirty=true;saveMeta();renderStatus();scheduleSync()}
 function touchCfg(){db.config.updatedAt=Date.now();persist()}
 const sortEntries=a=>a.sort((x,y)=>x.date.localeCompare(y.date)||(x.createdAt-y.createdAt)||String(x.id).localeCompare(String(y.id)));
 function serialize(d){const e=sortEntries(d.entries.map(canonE));return `{\n"version":1,\n"config":${JSON.stringify(canonC(d.config))},\n"entries":[\n${e.map(x=>JSON.stringify(x)).join(',\n')}\n]}\n`}
-function merge(a,b){
-  const map=new Map();
+function merge(a,b){const map=new Map();
   for(const e of [...a.entries,...b.entries]){const c=map.get(e.id);if(!c||(e.updatedAt||0)>(c.updatedAt||0))map.set(e.id,e)}
   const config=(b.config.updatedAt||0)>(a.config.updatedAt||0)?b.config:a.config;
-  return normalize({config,entries:sortEntries([...map.values()])});
-}
+  return normalize({config,entries:sortEntries([...map.values()])})}
 
 /* ---------- calendar logic ---------- */
 const holidayMap=()=>Object.fromEntries(db.config.holidays.map(h=>[h.date,h.name]));
@@ -288,68 +404,57 @@ function dayInfo(iso,H=holidayMap(),L=leaveMap()){
   if(H[iso])return {kind:'holiday',label:H[iso]};
   if(L[iso])return {kind:'leave',label:L[iso]};
   if(db.config.weekend.includes(dow(iso)))return {kind:'weekend',label:'Weekend'};
-  return {kind:'work',label:'Working Day'};
-}
-function computeYear(y){
-  const H=holidayMap(),L=leaveMap(),t=todayISO();
+  return {kind:'work',label:'Working Day'}}
+function computeYear(y){const H=holidayMap(),L=leaveMap(),t=todayISO();
   const M=Array.from({length:12},()=>({working:0,elapsed:0,hours:0,byType:{},byTask:{}}));
   for(let m=0;m<12;m++)for(let d=1;d<=daysInMonth(y,m);d++){const iso=`${y}-${pad(m+1)}-${pad(d)}`;if(dayInfo(iso,H,L).kind==='work'){M[m].working++;if(iso<=t)M[m].elapsed++}}
   live().forEach(e=>{if(+e.date.slice(0,4)!==y)return;const mm=M[+e.date.slice(5,7)-1];mm.hours+=e.hours;
     const a=e.type||'(none)',b=e.task||'(none)';mm.byType[a]=(mm.byType[a]||0)+e.hours;mm.byTask[b]=(mm.byTask[b]||0)+e.hours});
-  return M;
-}
+  return M}
 
 /* ---------- GitHub sync ---------- */
 const ghReady=()=>!!(gh.owner&&gh.repo&&gh.token);
 const hdr=()=>({Authorization:`Bearer ${gh.token}`,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'});
 const ghUrl=()=>`https://api.github.com/repos/${encodeURIComponent(gh.owner)}/${encodeURIComponent(gh.repo)}/contents/${gh.path.split('/').map(encodeURIComponent).join('/')}`;
-const b64enc=s=>{const b=new TextEncoder().encode(s);let bin='';for(let i=0;i<b.length;i+=0x8000)bin+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(bin)};
-const b64dec=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g,'')),c=>c.charCodeAt(0)));
 async function ghErr(r,op){let m='';try{m=(await r.json()).message}catch{}
   const hint={401:' — check the token',403:' — token needs Contents: read & write (or rate-limited)',404:' — repo not found or token has no access'}[r.status]||'';
   return `GitHub ${op} failed: ${r.status} ${m}${hint}`}
-async function ghGet(){
-  const url=ghUrl()+'?ref='+encodeURIComponent(gh.branch);
+async function ghGet(){const url=ghUrl()+'?ref='+encodeURIComponent(gh.branch);
   const r=await fetch(url,{headers:hdr(),cache:'no-store'});
   if(r.status===404)return {sha:null,data:null};
   if(!r.ok)throw new Error(await ghErr(r,'read'));
   const j=await r.json();let text;
   if(j.encoding==='base64'&&j.content)text=b64dec(j.content);
   else{const r2=await fetch(url,{headers:{...hdr(),Accept:'application/vnd.github.raw+json'},cache:'no-store'});if(!r2.ok)throw new Error(await ghErr(r2,'read'));text=await r2.text()}
-  return {sha:j.sha,data:text.trim()?JSON.parse(text):null};
-}
+  return {sha:j.sha,data:text.trim()?JSON.parse(text):null}}
 async function ghPut(content,sha){
-  const body={message:`timesheet: sync ${new Date().toISOString().slice(0,16).replace('T',' ')}`,content:b64enc(content),branch:gh.branch};
-  if(sha)body.sha=sha;
+  const body={message:`timesheet: sync ${new Date().toISOString().slice(0,16).replace('T',' ')}`,content:b64enc(content),branch:gh.branch};if(sha)body.sha=sha;
   const r=await fetch(ghUrl(),{method:'PUT',headers:{...hdr(),'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(r.status===409||r.status===422){const e=new Error('Conflict');e.conflict=true;throw e}
-  if(!r.ok)throw new Error(await ghErr(r,'write'));
-}
+  if(!r.ok)throw new Error(await ghErr(r,'write'))}
 let syncing=false,syncTimer;
 function scheduleSync(){if(!ghReady()||gh.auto===false)return;clearTimeout(syncTimer);syncTimer=setTimeout(()=>sync(),4000)}
 async function sync(manual=false){
+  if(!KEY)return;
   if(!ghReady()){if(manual){toast('Set up GitHub sync first');switchTab('settings')}return}
-  if(syncing)return;
-  syncing=true;setStatus('busy','Syncing…');let ok=false;
-  try{
-    for(let attempt=0;;attempt++){
-      const remote=await ghGet();
-      const rd=remote.data?normalize(remote.data):null;
-      db=rd?merge(db,rd):db;saveLocal();
-      const out=serialize(db);
+  if(syncing)return;syncing=true;setStatus('busy','Syncing…');let ok=false;
+  try{for(let attempt=0;;attempt++){
+      const remote=await ghGet(),rd=remote.data?normalize(remote.data):null;
+      db=rd?merge(db,rd):db;saveLocal();const out=serialize(db);
       if(!rd||out!==serialize(rd)){try{await ghPut(out,remote.sha)}catch(e){if(e.conflict&&attempt<3)continue;throw e}}
-      meta.lastSync=Date.now();meta.dirty=serialize(db)!==out;saveMeta();break;
-    }
-    ok=true;rerender();if(manual)toast('Synced with GitHub');
-  }catch(e){console.error(e);toast(e.message||'Sync failed')}
-  finally{syncing=false;ok?renderStatus():setStatus('err','Sync failed');if(ok&&meta.dirty)scheduleSync()}
-}
+      meta.lastSync=Date.now();meta.dirty=serialize(db)!==out;saveMeta();break}
+    ok=true;rerender();if(manual)toast('Synced with GitHub')}
+  catch(e){console.error(e);toast(e.message||'Sync failed')}
+  finally{syncing=false;ok?renderStatus():setStatus('err','Sync failed');if(ok&&meta.dirty)scheduleSync()}}
 function setStatus(c,t){const p=$('#status');p.className='pill '+c;p.textContent=t}
 const ago=t=>{const s=(Date.now()-t)/1000;return s<60?'just now':s<3600?Math.floor(s/60)+'m ago':s<86400?Math.floor(s/3600)+'h ago':new Date(t).toLocaleDateString()};
-function renderStatus(){if(syncing)return;if(!ghReady())return setStatus('','Local only');if(meta.dirty)return setStatus('dirty','Unsynced changes');setStatus('ok',meta.lastSync?'Synced '+ago(meta.lastSync):'Ready')}
+function renderStatus(){if(syncing||!KEY)return;if(!ghReady())return setStatus('','Local only');if(meta.dirty)return setStatus('dirty','Unsynced changes');setStatus('ok',meta.lastSync?'Synced '+ago(meta.lastSync):'Ready')}
 
-/* ---------- UI: shared ---------- */
+/* ---------- UI shared ---------- */
 let curTab='log';
+function startApp(){closeLogin();$('#welcome').hidden=true;$('#app').hidden=false;document.title='Timesheet';
+  fillSelects();fillForm({date:todayISO()});renderTimer();renderStatus();
+  const h=location.hash.slice(1);switchTab(h==='login'?'log':h||'log');if(ghReady())sync()}
 function switchTab(t){if(!['log','dash','cal','settings'].includes(t))t='log';curTab=t;
   $$('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   $$('.tab').forEach(s=>s.classList.toggle('active',s.id==='tab-'+t));
@@ -366,33 +471,37 @@ function applyTheme(t){t=t||localStorage.getItem(K.theme)||(matchMedia('(prefers
 
 /* ---------- LOG tab ---------- */
 const F=()=>$('#entryForm');
-let editingId=null,logMonth=nowMonth();
+let editingId=null,logMonth=nowMonth(),starOnly=false;
 function fillSelects(){const s=F().type,cur=s.value;
   s.innerHTML=db.config.taskTypes.map(t=>`<option>${esc(t)}</option>`).join('');if(cur){ensureOption(s,cur);s.value=cur}
-  $('#taskList').innerHTML=db.config.taskNames.map(t=>`<option value="${esc(t)}">`).join('')}
+  $('#taskList').innerHTML=db.config.taskNames.map(t=>`<option value="${esc(t)}">`).join('');renderQuick()}
 function ensureOption(sel,v){if(v&&![...sel.options].some(o=>o.value===v))sel.add(new Option(v,v))}
 function fillForm(e){const f=F();f.date.value=e.date||todayISO();ensureOption(f.type,e.type);f.type.value=e.type||db.config.taskTypes[0]||'';
-  f.task.value=e.task||'';f.ticket.value=e.ticket||'';f.hours.value=e.hours??'';f.desc.value=e.desc||'';updateDaySum()}
+  f.task.value=e.task||'';f.ticket.value=e.ticket||'';f.hours.value=e.hours??'';f.desc.value=e.desc||'';f.star.checked=!!e.star;updateDaySum()}
 function setMode(edit){$('#formTitle').textContent=edit?'Edit entry':'New entry';$('#cancelEdit').textContent=edit?'Cancel':'Clear'}
 function resetForm(date){const f=F();editingId=null;fillForm({date:date||f.date.value||todayISO(),type:f.type.value,task:f.task.value});setMode(false)}
 function startEdit(e){editingId=e.id;fillForm(e);setMode(true);F().scrollIntoView({behavior:'smooth',block:'start'});F().desc.focus()}
 function updateDaySum(){const d=F().date.value;if(!d){$('#daySum').textContent='';return}
   const tot=live().filter(e=>e.date===d&&e.id!==editingId).reduce((s,e)=>s+e.hours,0);
   $('#daySum').innerHTML=`${DAYS[dow(d)]} · ${esc(dayInfo(d).label)} · already logged <b>${fmt(tot)}h</b> of ${db.config.dailyTarget}h`}
+function renderQuick(){const since=addDays(todayISO(),-60),cnt={};
+  live().forEach(e=>{if(e.date>=since&&e.task){const k=e.type+'\u0001'+e.task;cnt[k]=(cnt[k]||0)+1}});
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  $('#quick').innerHTML=top.length?'<div class="q-label">Quick picks</div>'+top.map(([k])=>{const [t,n]=k.split('\u0001');
+    return `<button type="button" class="q" data-t="${esc(t)}" data-n="${esc(n)}" style="--h:${hue(t)}" title="${esc(t)} · ${esc(n)}">${esc(n)}</button>`}).join(''):''}
 function saveEntry(ev){ev.preventDefault();const f=F(),now=Date.now();
-  const data={date:f.date.value,type:f.type.value,task:f.task.value.trim(),ticket:f.ticket.value.trim(),hours:parseFloat(f.hours.value),desc:f.desc.value.trim()};
+  const data={date:f.date.value,type:f.type.value,task:f.task.value.trim(),ticket:f.ticket.value.trim(),hours:parseFloat(f.hours.value),desc:f.desc.value.trim(),star:f.star.checked};
   if(!data.date||!(data.hours>0))return toast('Date and hours are required');
   if(data.task&&!db.config.taskNames.includes(data.task)){db.config.taskNames.push(data.task);db.config.updatedAt=now}
   if(data.type&&!db.config.taskTypes.includes(data.type)){db.config.taskTypes.push(data.type);db.config.updatedAt=now}
   if(editingId){const e=db.entries.find(x=>x.id===editingId);Object.assign(e,data,{updatedAt:now})}
   else db.entries.push(canonE({id:uid(),...data,createdAt:now,updatedAt:now}));
-  const wasEdit=!!editingId;persist();
-  logMonth={y:+data.date.slice(0,4),m:+data.date.slice(5,7)-1};
+  const wasEdit=!!editingId;persist();logMonth={y:+data.date.slice(0,4),m:+data.date.slice(5,7)-1};
   fillSelects();resetForm(data.date);f.ticket.value='';f.hours.value='';f.desc.value='';f.hours.focus();
   renderLog();toast(wasEdit?'Entry updated':'Entry saved')}
 const match=(e,q)=>[e.type,e.task,e.ticket,e.desc,e.date].join(' ').toLowerCase().includes(q);
-function entryRow(e){return `<div class="entry">${chip(e.type)}<div><div class="e-task">${esc(e.task||'—')}${e.ticket?`<span class="ticket">${esc(e.ticket)}</span>`:''}</div>${e.desc?`<div class="e-desc">${esc(e.desc)}</div>`:''}</div>
-  <b class="e-h">${fmt(e.hours)}h</b><div class="e-act"><button title="Edit" data-act="edit" data-id="${e.id}">✎</button><button title="Copy to form (today)" data-act="dup" data-id="${e.id}">⧉</button><button title="Delete" data-act="del" data-id="${e.id}">🗑</button></div></div>`}
+function entryRow(e){return `<div class="entry">${chip(e.type)}<div><div class="e-task">${e.star?'<span class="star-on">★</span> ':''}${esc(e.task||'—')}${e.ticket?`<span class="ticket">${esc(e.ticket)}</span>`:''}</div>${e.desc?`<div class="e-desc">${esc(e.desc)}</div>`:''}</div>
+  <b class="e-h">${fmt(e.hours)}h</b><div class="e-act"><button title="${e.star?'Remove highlight':'Highlight'}" data-act="star" data-id="${e.id}">${e.star?'★':'☆'}</button><button title="Edit" data-act="edit" data-id="${e.id}">✎</button><button title="Copy to form (today)" data-act="dup" data-id="${e.id}">⧉</button><button title="Delete" data-act="del" data-id="${e.id}">🗑</button></div></div>`}
 function dayBlock(iso,list,H,L){const info=dayInfo(iso,H,L),tot=list.reduce((s,e)=>s+e.hours,0),tgt=db.config.dailyTarget;
   const cls=info.kind!=='work'?'':tot===0?'bad':tot>=tgt?'ok':'warn';const d=new Date(iso+'T00:00:00Z');
   return `<div class="day card ${info.kind}"><div class="day-h"><b>${DAYS[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}</b><span class="badge ${info.kind}">${esc(info.label)}</span>
@@ -400,11 +509,13 @@ function dayBlock(iso,list,H,L){const info=dayInfo(iso,H,L),tot=list.reduce((s,e
   ${list.length?list.sort((a,b)=>a.createdAt-b.createdAt).map(entryRow).join(''):'<div class="muted none">Nothing logged</div>'}</div>`}
 function renderLog(){
   const q=$('#search').value.trim().toLowerCase(),H=holidayMap(),L=leaveMap(),t=todayISO(),tgt=db.config.dailyTarget;
+  const filt=e=>(!q||match(e,q))&&(!starOnly||e.star),filtering=!!q||starOnly;
+  $('#starOnly').classList.toggle('on',starOnly);
   const byDate={};live().forEach(e=>(byDate[e.date]??=[]).push(e));
   let dates;
-  if(q){dates=Object.keys(byDate).filter(d=>byDate[d].some(e=>match(e,q))).sort().reverse();$('#monthLabel').textContent='Search results';
-    const hits=live().filter(e=>match(e,q));
-    $('#monthSummary').innerHTML=kpi('Matching entries',hits.length)+kpi('Hours',fmt(hits.reduce((s,e)=>s+e.hours,0))+'h')+kpi('Days',dates.length);
+  if(filtering){dates=Object.keys(byDate).filter(d=>byDate[d].some(filt)).sort().reverse();
+    $('#monthLabel').textContent=starOnly&&!q?'Highlights':'Results';const hits=live().filter(filt);
+    $('#monthSummary').innerHTML=kpi('Entries',hits.length)+kpi('Hours',fmt(hits.reduce((s,e)=>s+e.hours,0))+'h')+kpi('Days',dates.length);
   }else{const {y,m}=logMonth;$('#monthLabel').textContent=`${MONTHS_FULL[m]} ${y}`;dates=[];
     let working=0,elapsed=0,hours=0,missing=0;
     for(let d=daysInMonth(y,m);d>=1;d--){const iso=`${y}-${pad(m+1)}-${pad(d)}`,k=dayInfo(iso,H,L).kind,h=(byDate[iso]||[]).reduce((s,e)=>s+e.hours,0);hours+=h;
@@ -412,9 +523,23 @@ function renderLog(){
       if(byDate[iso]||(k==='work'&&iso<=t))dates.push(iso)}
     const p=elapsed?hours/(elapsed*tgt):0;
     $('#monthSummary').innerHTML=kpi('Logged',fmt(hours)+'h')+kpi('Expected so far',fmt(elapsed*tgt)+'h')+kpi('Productivity',pct(p),pcls(p))+kpi('Working days',`${elapsed}/${working}`)+kpi('Days missing',missing,missing?'p-bad':'p-ok')}
-  $('#dayList').innerHTML=dates.length?dates.map(iso=>dayBlock(iso,(byDate[iso]||[]).filter(e=>!q||match(e,q)),H,L)).join(''):'<div class="empty card">No entries here yet.</div>'}
+  $('#dayList').innerHTML=dates.length?dates.map(iso=>dayBlock(iso,(byDate[iso]||[]).filter(e=>!filtering||filt(e)),H,L)).join(''):'<div class="empty card">Nothing here yet.</div>'}
 
-/* ---------- DASHBOARD tab ---------- */
+/* ---------- timer ---------- */
+let timer=JSON.parse(localStorage.getItem(K.timer)||'null');
+function startTimer(){const f=F();timer={start:Date.now(),type:f.type.value,task:f.task.value.trim(),ticket:f.ticket.value.trim(),desc:f.desc.value.trim()};
+  localStorage.setItem(K.timer,JSON.stringify(timer));renderTimer();toast('Timer started')}
+function stopTimer(){if(!timer)return;const hrs=Math.max(.25,Math.round((Date.now()-timer.start)/36e5*4)/4),d=new Date(timer.start);
+  const date=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  editingId=null;switchTab('log');fillForm({date,type:timer.type,task:timer.task,ticket:timer.ticket,desc:timer.desc,hours:hrs});setMode(false);
+  timer=null;localStorage.removeItem(K.timer);renderTimer();F().desc.focus();toast(`Timer stopped at ${fmt(hrs)}h — review and save`)}
+function renderTimer(){const b=$('#timerBtn'),p=$('#timerPill');
+  if(timer){const s=Math.floor((Date.now()-timer.start)/1000);p.hidden=false;
+    p.textContent=`⏱ ${pad(Math.floor(s/3600))}:${pad(Math.floor(s/60)%60)}:${pad(s%60)}${timer.task?' · '+timer.task:''}`;b.textContent='■ Stop timer';b.classList.add('running')}
+  else{p.hidden=true;b.textContent='▶ Start timer';b.classList.remove('running')}}
+setInterval(()=>{if(timer&&KEY)renderTimer()},1000);
+
+/* ---------- DASHBOARD ---------- */
 let dashYear=new Date().getFullYear(),unit='h';
 function table(head,rows){return `<table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td${i?' class="num"':''}>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
 function renderDash(){
@@ -426,8 +551,7 @@ function renderDash(){
   $('#chart').innerHTML=M.map((m,i)=>`<div class="bar-col" title="${MONTHS[i]}: ${fmt(m.hours)}h logged / ${fmt(m.elapsed*tgt)}h expected"><div class="bars"><div class="bar exp" style="height:${m.elapsed*tgt/max*100}%"></div><div class="bar act" style="height:${m.hours/max*100}%"></div></div><span>${MONTHS[i]}</span></div>`).join('');
   const pc=p=>`<span class="${pcls(p)}">${pct(p)}</span>`;
   $('#monthTbl').innerHTML=table(['',...MONTHS,'Total'],[
-    ['Working days',...M.map(m=>m.working),T.working],
-    ['Elapsed',...M.map(m=>m.elapsed),T.elapsed],
+    ['Working days',...M.map(m=>m.working),T.working],['Elapsed',...M.map(m=>m.elapsed),T.elapsed],
     [`Logged (${u})`,...M.map(m=>fmt(cv(m.hours))),`<b>${fmt(cv(T.hours))}</b>`],
     [`Expected (${u})`,...M.map(m=>fmt(cv(m.elapsed*tgt))),fmt(cv(T.elapsed*tgt))],
     ['Productivity',...M.map(m=>m.elapsed?pc(m.hours/(m.elapsed*tgt)):'—'),pc(prod)]]);
@@ -437,12 +561,11 @@ function renderDash(){
     return table(['',...MONTHS,'Total','Share'],rows.map(r=>[asChip?chip(r.k):esc(r.k),...r.v.map(x=>x?fmt(cv(x)):'<span class="muted">·</span>'),`<b>${fmt(cv(r.t))}</b>`,`<span class="share"><i style="width:${r.t/T.hours*100}%"></i></span>${Math.round(r.t/T.hours*100)}%`]))};
   $('#typeTbl').innerHTML=matrix('byType',true);$('#taskTbl').innerHTML=matrix('byTask',false)}
 
-/* ---------- CALENDAR tab ---------- */
+/* ---------- CALENDAR ---------- */
 let calMonth=nowMonth();
 function hlList(arr,kind){return arr.length?`<ul class="hl">${[...arr].sort((a,b)=>b.date.localeCompare(a.date)).map(h=>`<li><span>${h.date} · ${DAYS[dow(h.date)]}</span><b>${esc(h.name)}</b><button data-kind="${kind}" data-date="${h.date}" title="Remove">×</button></li>`).join('')}</ul>`:'<p class="muted">None yet.</p>'}
 function upsertDay(arr,date,name){const i=arr.findIndex(x=>x.date===date);i>=0?arr[i]={date,name}:arr.push({date,name})}
-function renderCal(){
-  const {y,m}=calMonth,H=holidayMap(),L=leaveMap(),t=todayISO(),tgt=db.config.dailyTarget;$('#calLabel').textContent=`${MONTHS_FULL[m]} ${y}`;
+function renderCal(){const {y,m}=calMonth,H=holidayMap(),L=leaveMap(),t=todayISO(),tgt=db.config.dailyTarget;$('#calLabel').textContent=`${MONTHS_FULL[m]} ${y}`;
   const hrs={};live().forEach(e=>hrs[e.date]=(hrs[e.date]||0)+e.hours);
   const off=(dow(`${y}-${pad(m+1)}-01`)+6)%7;
   let html=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div class="wd">${d}</div>`).join('')+'<div class="cell blank"></div>'.repeat(off);
@@ -451,16 +574,16 @@ function renderCal(){
     html+=`<button class="cell ${c}" data-date="${iso}" style="--f:${i.kind==='work'?Math.min(h/tgt,1.2):0}"><span class="dn">${d}</span>${h?`<b>${fmt(h)}h</b>`:''}<small>${i.kind==='holiday'||i.kind==='leave'?esc(i.label):''}</small></button>`}
   $('#calGrid').innerHTML=html;$('#holList').innerHTML=hlList(db.config.holidays,'holidays');$('#leaveList').innerHTML=hlList(db.config.leaves,'leaves')}
 
-/* ---------- SETTINGS tab ---------- */
+/* ---------- SETTINGS ---------- */
 function renderSettings(){const c=db.config,f=$('#cfgForm');f.dailyTarget.value=c.dailyTarget;f.taskTypes.value=c.taskTypes.join('\n');f.taskNames.value=c.taskNames.join('\n');
   $('#wkDays').innerHTML=DAYS.map((d,i)=>`<label><input type="checkbox" value="${i}" ${c.weekend.includes(i)?'checked':''}>${d}</label>`).join('');
   const g=$('#ghForm');g.owner.value=gh.owner||'';g.repo.value=gh.repo||'';g.branch.value=gh.branch||'main';g.path.value=gh.path||'data/timesheet.json';
   g.token.value='';g.token.placeholder=gh.token?'•••••• saved (leave blank to keep)':'github_pat_…';g.auto.checked=gh.auto!==false;
-  $('#dataInfo').textContent=`${live().length} entries on this device · ${db.config.holidays.length} holidays · ${db.config.leaves.length} leave days`}
+  $('#dataInfo').textContent=`${live().length} entries · ${live().filter(e=>e.star).length} highlights · ${c.holidays.length} holidays · ${c.leaves.length} leave days`}
 function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function toCSV(){const H=holidayMap(),L=leaveMap(),q=v=>{v=String(v??'');return /[",\n\r]/.test(v)?`"${v.replace(/"/g,'""')}"`:v};
-  const rows=[['Date','Day','Task Type','Task Name','Ticket #','Time (Hrs)','Description','Day Type']];
-  sortEntries(live()).forEach(e=>rows.push([e.date,DAYS[dow(e.date)],e.type,e.task,e.ticket,e.hours,e.desc,dayInfo(e.date,H,L).label]));
+  const rows=[['Date','Day','Task Type','Task Name','Ticket #','Time (Hrs)','Description','Day Type','Highlight']];
+  sortEntries(live()).forEach(e=>rows.push([e.date,DAYS[dow(e.date)],e.type,e.task,e.ticket,e.hours,e.desc,dayInfo(e.date,H,L).label,e.star?'Yes':'']));
   return '\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n')}
 function toISO(v){if(v==null||v==='')return null;
   if(typeof v==='number')return new Date(Math.round((v-25569)*864e5)).toISOString().slice(0,10);
@@ -479,9 +602,9 @@ async function importXlsx(file){
   let n=0,skip=0;
   ts.slice(1).forEach((r,i)=>{const date=toISO(r[c.date]),hours=parseFloat(r[c.hours]);
     if(!date||!(hours>0)){if(r.some(x=>x!==''))skip++;return}
-    const num=c.n>=0&&r[c.n]!==''?r[c.n]:'r'+(i+2);
-    const e=canonE({id:`xl-${num}-${date}`,date,type:str(r[c.type]),task:str(r[c.task]),ticket:c.ticket>=0?str(r[c.ticket]):'',hours,desc:c.desc>=0?str(r[c.desc]):'',createdAt:now+i,updatedAt:now});
-    if(idx.has(e.id))db.entries[idx.get(e.id)]=e;else{idx.set(e.id,db.entries.length);db.entries.push(e)}
+    const num=c.n>=0&&r[c.n]!==''?r[c.n]:'r'+(i+2),id=`xl-${num}-${date}`,old=idx.has(id)?db.entries[idx.get(id)]:null;
+    const e=canonE({id,date,type:str(r[c.type]),task:str(r[c.task]),ticket:c.ticket>=0?str(r[c.ticket]):'',hours,desc:c.desc>=0?str(r[c.desc]):'',star:old?.star,createdAt:now+i,updatedAt:now});
+    if(old)db.entries[idx.get(id)]=e;else{idx.set(id,db.entries.length);db.entries.push(e)}
     addTo(cfg.taskTypes,e.type);addTo(cfg.taskNames,e.task);n++});
   const lv=sheet('leaves');if(lv)lv.slice(1).forEach(r=>{const d=toISO(r[1]);if(d&&str(r[2]))upsertDay(cfg.leaves,d,str(r[2]))});
   const ph=sheet('public holidays');if(ph)ph.slice(1).forEach(r=>{const d=toISO(r[1]);if(d&&str(r[2]))upsertDay(cfg.holidays,d,str(r[2]))});
@@ -490,29 +613,53 @@ async function importXlsx(file){
   touchCfg();rerender();renderSettings();toast(`Imported ${n} entries${skip?` · skipped ${skip} incomplete rows`:''}`)}
 
 /* ---------- events ---------- */
+$('#openLogin').onclick=openLogin;
+$$('[data-close]').forEach(b=>b.onclick=closeLogin);
+$('#loginForm').onsubmit=async ev=>{ev.preventDefault();const f=ev.target,v=getVault();$('#loginErr').textContent='';busy(f,true);
+  try{const key=await deriveKey(f.pass.value,b64u8(v.salt));try{await decStr(key,v.gh)}catch{throw new Error('Wrong passphrase')}
+    KEY=key;await rememberKey(f.remember.checked);await unlockWith(key,v);f.reset()}
+  catch(e){$('#loginErr').textContent=e.message;f.pass.select()}finally{busy(f,false)}};
+$('#setupForm').onsubmit=async ev=>{ev.preventDefault();const f=ev.target,err=$('#setupErr');err.textContent='';
+  if(f.pass.value.length<10)return err.textContent='Use a passphrase of at least 10 characters (12+ recommended)';
+  if(f.pass.value!==f.pass2.value)return err.textContent='Passphrases do not match';
+  const g={owner:f.owner.value.trim(),repo:f.repo.value.trim(),branch:f.branch.value.trim()||'main',path:f.path.value.trim().replace(/^\/+/,'')||'data/timesheet.json',token:f.token.value.trim(),auto:true};
+  busy(f,true);
+  try{const r=await fetch(`https://api.github.com/repos/${encodeURIComponent(g.owner)}/${encodeURIComponent(g.repo)}`,{headers:{Authorization:`Bearer ${g.token}`,Accept:'application/vnd.github+json'},cache:'no-store'});
+    if(!r.ok)throw new Error(r.status===401?'GitHub rejected the token':r.status===404?'Repo not found, or the token has no access to it':`GitHub error ${r.status}`);
+    const salt=crypto.getRandomValues(new Uint8Array(16));KEY=await deriveKey(f.pass.value,salt);gh=g;vault={v:1,salt:u8b64(salt)};
+    await writeVault();localStorage.removeItem(K.gh);await rememberKey(f.remember.checked);await unlockWith(KEY,vault);f.reset()}
+  catch(e){KEY=null;err.textContent=e.message}finally{busy(f,false)}};
 $('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)switchTab(b.dataset.tab)};
 $('#syncBtn').onclick=()=>sync(true);
 $('#themeBtn').onclick=()=>{const t=document.documentElement.dataset.theme==='dark'?'light':'dark';localStorage.setItem(K.theme,t);applyTheme(t)};
+$('#lockBtn').onclick=()=>signOut(false);
+$('#signOutBtn').onclick=()=>signOut(false);
+$('#wipeBtn').onclick=()=>signOut(true);
+$('#timerBtn').onclick=()=>timer?stopTimer():startTimer();
+$('#timerPill').onclick=()=>{switchTab('log');F().scrollIntoView({behavior:'smooth'})};
+$('#quick').onclick=e=>{const b=e.target.closest('.q');if(!b)return;const f=F();ensureOption(f.type,b.dataset.t);f.type.value=b.dataset.t;f.task.value=b.dataset.n;f.hours.focus()};
 F().onsubmit=saveEntry;
 F().addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();F().requestSubmit()}});
 F().date.onchange=updateDaySum;
 $('#cancelEdit').onclick=()=>{editingId=null;fillForm({date:F().date.value});setMode(false)};
 $('#prevM').onclick=()=>{logMonth=shiftM(logMonth,-1);renderLog()};
 $('#nextM').onclick=()=>{logMonth=shiftM(logMonth,1);renderLog()};
-$('#thisM').onclick=()=>{logMonth=nowMonth();$('#search').value='';renderLog()};
+$('#thisM').onclick=()=>{logMonth=nowMonth();starOnly=false;$('#search').value='';renderLog()};
+$('#starOnly').onclick=()=>{starOnly=!starOnly;renderLog()};
 $('#search').oninput=renderLog;
-document.addEventListener('keydown',e=>{if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();switchTab('log');$('#search').focus()}});
+document.addEventListener('keydown',e=>{if(KEY&&e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();switchTab('log');$('#search').focus()}});
 $('#dayList').onclick=ev=>{const b=ev.target.closest('[data-act]');if(!b)return;const e=db.entries.find(x=>x.id===b.dataset.id);
   if(b.dataset.act==='add'){resetForm(b.dataset.date);F().scrollIntoView({behavior:'smooth'});F().hours.focus()}
   else if(b.dataset.act==='edit')startEdit(e);
-  else if(b.dataset.act==='dup'){editingId=null;fillForm({...e,date:todayISO()});setMode(false);F().hours.focus()}
+  else if(b.dataset.act==='dup'){editingId=null;fillForm({...e,date:todayISO(),star:false});setMode(false);F().hours.focus()}
+  else if(b.dataset.act==='star'){e.star=!e.star;e.updatedAt=Date.now();persist();renderLog()}
   else if(b.dataset.act==='del'){e.deleted=true;e.updatedAt=Date.now();persist();renderLog();updateDaySum();
     toast('Entry deleted','Undo',()=>{e.deleted=false;e.updatedAt=Date.now();persist();renderLog();updateDaySum()})}};
 $('#prevY').onclick=()=>{dashYear--;renderDash()};$('#nextY').onclick=()=>{dashYear++;renderDash()};
 $('#unitSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;unit=b.dataset.u;$$('#unitSeg button').forEach(x=>x.classList.toggle('on',x===b));renderDash()};
 $('#prevC').onclick=()=>{calMonth=shiftM(calMonth,-1);renderCal()};$('#nextC').onclick=()=>{calMonth=shiftM(calMonth,1);renderCal()};
 $('#calGrid').onclick=e=>{const c=e.target.closest('.cell[data-date]');if(!c)return;const d=c.dataset.date;
-  logMonth={y:+d.slice(0,4),m:+d.slice(5,7)-1};$('#search').value='';switchTab('log');resetForm(d);F().hours.focus()};
+  logMonth={y:+d.slice(0,4),m:+d.slice(5,7)-1};starOnly=false;$('#search').value='';switchTab('log');resetForm(d);F().hours.focus()};
 $('#holForm').onsubmit=ev=>{ev.preventDefault();const f=ev.target;upsertDay(db.config.holidays,f.date.value,f.name.value.trim());touchCfg();f.reset();renderCal()};
 $('#leaveForm').onsubmit=ev=>{ev.preventDefault();const f=ev.target;let d=f.from.value;const to=f.to.value||d;
   if(to<d)return toast('End date is before start date');let n=0;
@@ -521,25 +668,29 @@ $('#leaveForm').onsubmit=ev=>{ev.preventDefault();const f=ev.target;let d=f.from
 ['#holList','#leaveList'].forEach(s=>$(s).onclick=e=>{const b=e.target.closest('button[data-kind]');if(!b)return;
   db.config[b.dataset.kind]=db.config[b.dataset.kind].filter(x=>x.date!==b.dataset.date);touchCfg();renderCal()});
 $('#cfgForm').onsubmit=ev=>{ev.preventDefault();const f=ev.target,lines=v=>[...new Set(v.split('\n').map(s=>s.trim()).filter(Boolean))];
-  Object.assign(db.config,{dailyTarget:parseFloat(f.dailyTarget.value)||8,taskTypes:lines(f.taskTypes.value),taskNames:lines(f.taskNames.value),
-    weekend:$$('#wkDays input:checked').map(i=>+i.value)});touchCfg();fillSelects();toast('Settings saved')};
-$('#ghForm').onsubmit=ev=>{ev.preventDefault();const f=ev.target;
+  Object.assign(db.config,{dailyTarget:parseFloat(f.dailyTarget.value)||8,taskTypes:lines(f.taskTypes.value),taskNames:lines(f.taskNames.value),weekend:$$('#wkDays input:checked').map(i=>+i.value)});
+  touchCfg();fillSelects();toast('Settings saved')};
+$('#ghForm').onsubmit=async ev=>{ev.preventDefault();const f=ev.target;
   gh={owner:f.owner.value.trim(),repo:f.repo.value.trim(),branch:f.branch.value.trim()||'main',path:f.path.value.trim().replace(/^\/+/,'')||'data/timesheet.json',token:f.token.value.trim()||gh.token||'',auto:f.auto.checked};
-  localStorage.setItem(K.gh,JSON.stringify(gh));renderSettings();sync(true)};
-$('#forgetGh').onclick=()=>{gh.token='';localStorage.setItem(K.gh,JSON.stringify(gh));renderSettings();renderStatus();toast('Token removed from this browser')};
+  await writeVault();renderSettings();sync(true)};
+$('#passForm').onsubmit=async ev=>{ev.preventDefault();const f=ev.target;
+  if(f.p1.value.length<10)return toast('Use at least 10 characters (12+ recommended)');
+  if(f.p1.value!==f.p2.value)return toast('Passphrases do not match');
+  const remembered=!!localStorage.getItem(K.key),salt=crypto.getRandomValues(new Uint8Array(16));
+  KEY=await deriveKey(f.p1.value,salt);vault={v:1,salt:u8b64(salt)};await writeVault();saveLocal();
+  sessionStorage.removeItem(K.key);localStorage.removeItem(K.key);await rememberKey(remembered);f.reset();
+  toast(PORTABLE_VAULT?'Passphrase changed. Copy the new portable login key into index.html':'Passphrase changed')};
+$('#copyVault').onclick=async()=>{const s=JSON.stringify(vault);
+  try{await navigator.clipboard.writeText(s);toast('Copied. Paste it between the quotes of PORTABLE_VAULT in index.html')}catch{prompt('Copy this key:',s)}};
 $('#xlsxIn').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;try{await importXlsx(file)}catch(err){toast(err.message)}};
 $('#jsonIn').onchange=async e=>{const file=e.target.files[0];e.target.value='';if(!file)return;
-  try{db=merge(db,normalize(JSON.parse(await file.text())));persist();rerender();renderSettings();toast('JSON merged')}catch(err){toast('Invalid JSON file')}};
+  try{db=merge(db,normalize(JSON.parse(await file.text())));persist();rerender();renderSettings();toast('JSON merged')}catch{toast('Invalid JSON file')}};
 $('#expJson').onclick=()=>download(`timesheet-${todayISO()}.json`,serialize(db),'application/json');
 $('#expCsv').onclick=()=>download(`timesheet-${todayISO()}.csv`,toCSV(),'text/csv');
-$('#clearLocal').onclick=()=>{if(!confirm('Remove all timesheet data from THIS browser? (Data already synced to GitHub stays there.)'))return;
-  localStorage.removeItem(K.data);localStorage.removeItem(K.meta);location.reload()};
-window.addEventListener('focus',()=>{if(ghReady()&&!syncing&&Date.now()-meta.lastSync>60000)sync()});
+window.addEventListener('focus',()=>{if(KEY&&ghReady()&&!syncing&&Date.now()-meta.lastSync>60000)sync()});
 setInterval(renderStatus,30000);
 
-/* ---------- boot ---------- */
-applyTheme();fillSelects();fillForm({date:todayISO()});renderStatus();switchTab(location.hash.slice(1)||'log');
-if(ghReady())sync();
+boot();
 </script>
 </body>
 </html>
